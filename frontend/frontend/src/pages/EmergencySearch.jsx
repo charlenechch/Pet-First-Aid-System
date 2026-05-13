@@ -1,0 +1,312 @@
+import { Link, useSearchParams } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { guides } from "../data/guides";
+
+const PETS = ["All Pets", "Dog", "Cat", "Rabbit", "Bird"];
+const PET_ICONS = { "All Pets": "🐾", Dog: "🐶", Cat: "🐱", Rabbit: "🐰", Bird: "🐦" };
+const SEVERITIES = ["All Severity", "Critical", "Moderate", "Mild"];
+const SEVERITY_STYLES = {
+  "All Severity": { bg: "#f3f4f6", color: "#6b7280" },
+  Critical:       { bg: "#FCEBEB", color: "#A32D2D" },
+  Moderate:       { bg: "#FAEEDA", color: "#854F0B" },
+  Mild:           { bg: "#EAF3DE", color: "#3B6D11" },
+};
+
+const GUIDES_PER_PAGE = 9;
+
+export default function EmergencySearch() {
+  const [params] = useSearchParams();
+
+  const [pet, setPet]           = useState(params.get("pet") || "All Pets");
+  const [severity, setSeverity] = useState("All Severity");
+  const [search, setSearch]     = useState(params.get("keyword") || "");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const resultsRef = useRef(null);
+
+  const [bookmarks, setBookmarks] = useState(() =>
+    JSON.parse(localStorage.getItem("pawguard-bookmarks") || "[]")
+  );
+
+  // Reset to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pet, severity, search]);
+
+  const toggleBookmark = (id) => {
+    const updated = bookmarks.includes(id)
+      ? bookmarks.filter((i) => i !== id)
+      : [...bookmarks, id];
+    setBookmarks(updated);
+    localStorage.setItem("pawguard-bookmarks", JSON.stringify(updated));
+  };
+
+  const filteredGuides = guides.filter((guide) => {
+    const matchPet      = pet === "All Pets" || guide.pet === pet;
+    const matchSeverity = severity === "All Severity" || guide.severity === severity;
+    const keyword       = search.toLowerCase();
+    const matchSearch   =
+      guide.title.toLowerCase().includes(keyword) ||
+      guide.keywords.toLowerCase().includes(keyword);
+    return matchPet && matchSeverity && matchSearch;
+  });
+
+  const totalPages  = Math.max(1, Math.ceil(filteredGuides.length / GUIDES_PER_PAGE));
+  const pagedGuides = filteredGuides.slice(
+    (currentPage - 1) * GUIDES_PER_PAGE,
+    currentPage * GUIDES_PER_PAGE
+  );
+
+  const clearSearch = () => {
+    setPet("All Pets");
+    setSeverity("All Severity");
+    setSearch("");
+  };
+
+  const hasFilters = pet !== "All Pets" || severity !== "All Severity" || search !== "";
+
+  const goToPage = (page) => {
+    setCurrentPage(page);
+    resultsRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Build page numbers with ellipsis
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages = [];
+    if (currentPage <= 4) {
+      pages.push(1, 2, 3, 4, 5, "...", totalPages);
+    } else if (currentPage >= totalPages - 3) {
+      pages.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+    } else {
+      pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+    }
+    return pages;
+  };
+
+  return (
+    <main className="search-page">
+
+      {/* HERO */}
+      <section className="search-hero">
+        <p className="search-label">Guides & Emergency Search</p>
+        <h1>Find the right first-aid guide fast</h1>
+        <p>Filter by pet type, severity level, or search by keyword.</p>
+      </section>
+
+      {/* FILTERS */}
+      <section className="search-filter-card">
+
+        {/* Pet filter */}
+        <div className="search-filter-group">
+          <p className="search-filter-label">Pet type</p>
+          <div className="search-pet-pills">
+            {PETS.map((p) => (
+              <button
+                key={p}
+                className={`search-pet-pill ${pet === p ? "active" : ""}`}
+                onClick={() => setPet(p)}
+              >
+                <span>{PET_ICONS[p]}</span> {p}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Severity filter */}
+        <div className="search-filter-group">
+          <p className="search-filter-label">Severity</p>
+          <div className="search-sev-pills">
+            {SEVERITIES.map((s) => {
+              const style    = SEVERITY_STYLES[s];
+              const isActive = severity === s;
+              return (
+                <button
+                  key={s}
+                  className={`search-sev-pill ${isActive ? "active" : ""}`}
+                  style={isActive ? { background: style.bg, color: style.color, borderColor: style.color } : {}}
+                  onClick={() => setSeverity(s)}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Keyword search */}
+        <div className="search-filter-group">
+          <p className="search-filter-label">Search keyword</p>
+          <div className="search-input-row">
+            <div className="search-input-wrap">
+              <svg className="search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                type="text"
+                className="search-input"
+                placeholder="e.g. choking, poison, bleeding..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button className="search-input-clear" onClick={() => setSearch("")}>✕</button>
+              )}
+            </div>
+          </div>
+
+          <div className="search-tags">
+            {["choking", "poisoning", "bleeding", "heatstroke", "broken bone"].map((item) => (
+              <span
+                key={item}
+                className={search === item ? "active" : ""}
+                onClick={() => setSearch(search === item ? "" : item)}
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Active filters + clear */}
+        {hasFilters && (
+          <div className="search-active-row">
+            <div className="search-active-filters">
+              {pet !== "All Pets" && (
+                <span className="search-active-tag">
+                  {PET_ICONS[pet]} {pet}
+                  <button onClick={() => setPet("All Pets")}>✕</button>
+                </span>
+              )}
+              {severity !== "All Severity" && (
+                <span className="search-active-tag">
+                  {severity}
+                  <button onClick={() => setSeverity("All Severity")}>✕</button>
+                </span>
+              )}
+              {search && (
+                <span className="search-active-tag">
+                  "{search}"
+                  <button onClick={() => setSearch("")}>✕</button>
+                </span>
+              )}
+            </div>
+            <button className="search-clear-all" onClick={clearSearch}>
+              Clear all
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* RESULTS */}
+      <section className="search-results" ref={resultsRef}>
+        <div className="search-results-header">
+          <h2>
+            {filteredGuides.length === 0
+              ? "No guides found"
+              : `${filteredGuides.length} guide${filteredGuides.length !== 1 ? "s" : ""} found`}
+          </h2>
+          {filteredGuides.length > 0 && (
+            <p className="search-results-meta">
+              Showing {(currentPage - 1) * GUIDES_PER_PAGE + 1}–
+              {Math.min(currentPage * GUIDES_PER_PAGE, filteredGuides.length)} of {filteredGuides.length}
+            </p>
+          )}
+        </div>
+
+        {filteredGuides.length > 0 ? (
+          <>
+            <div className="search-result-grid">
+              {pagedGuides.map((guide) => (
+                <div className={`search-result-card ${guide.color}`} key={guide.id}>
+                  <div className="search-card-top">
+                    <span className="search-card-icon">{guide.icon}</span>
+                    <button
+                      className={`bookmark-btn ${bookmarks.includes(guide.id) ? "bookmarked" : ""}`}
+                      onClick={() => toggleBookmark(guide.id)}
+                      aria-label="Bookmark"
+                    >
+                      {bookmarks.includes(guide.id) ? "★" : "☆"}
+                    </button>
+                  </div>
+
+                  <h3>{guide.title}</h3>
+
+                  <div className="search-card-meta">
+                    <span className="search-card-pet">{guide.pet}</span>
+                    <span
+                      className="search-card-severity"
+                      style={{
+                        background: SEVERITY_STYLES[guide.severity]?.bg || "#f3f4f6",
+                        color: SEVERITY_STYLES[guide.severity]?.color || "#6b7280",
+                      }}
+                    >
+                      {guide.severity}
+                    </span>
+                  </div>
+
+                  <Link to={`/guide-details/${guide.id}`} className="search-card-btn">
+                    View guide →
+                  </Link>
+                </div>
+              ))}
+            </div>
+
+            {/* PAGINATION */}
+            {totalPages > 1 && (
+              <div className="search-pagination">
+
+                {/* Prev */}
+                <button
+                  className="search-page-btn search-page-nav"
+                  onClick={() => goToPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  ‹ Prev
+                </button>
+
+                {/* Page numbers */}
+                <div className="search-page-numbers">
+                  {getPageNumbers().map((page, i) =>
+                    page === "..." ? (
+                      <span key={`ellipsis-${i}`} className="search-page-ellipsis">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={page}
+                        className={`search-page-btn ${currentPage === page ? "active" : ""}`}
+                        onClick={() => goToPage(page)}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                {/* Next */}
+                <button
+                  className="search-page-btn search-page-nav"
+                  onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next ›
+                </button>
+
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="search-empty">
+            <div className="search-empty-icon">🔍</div>
+            <h3>No guide found</h3>
+            <p>Try a different keyword or reset your filters.</p>
+            <button className="search-empty-btn" onClick={clearSearch}>Reset filters</button>
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
