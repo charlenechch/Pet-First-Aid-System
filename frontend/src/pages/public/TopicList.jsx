@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { guides } from "../data/guides";
+import { guides } from "../../data/guides";
 
 export default function TopicList() {
   return (

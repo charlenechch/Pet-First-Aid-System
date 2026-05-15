@@ -188,6 +188,107 @@ textarea {
   transform: translateY(-1px);
 }
 
+/* ===== PUBLIC NAVBAR - ADMIN STYLE WITHOUT DRAWER BEHAVIOR ===== */
+
+.public-top-navbar {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  min-height: 76px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--admin-border);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 0 32px;
+  z-index: 1000;
+}
+
+.public-navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.public-nav-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.public-nav-links a {
+  color: var(--admin-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 999px;
+  transition: 0.2s ease;
+}
+
+.public-nav-links a:hover {
+  background: var(--admin-green-hover);
+  color: var(--admin-green-dark);
+}
+
+.public-nav-links a.active {
+  background: var(--admin-green-light);
+  color: var(--admin-green-dark);
+}
+
+.public-navbar-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 18px;
+}
+
+.public-login-btn {
+  border: none;
+  background: var(--admin-green);
+  color: white;
+  padding: 11px 22px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.public-login-btn:hover {
+  background: var(--admin-green-dark);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 900px) {
+  .public-top-navbar {
+    grid-template-columns: 1fr;
+    padding: 16px 22px;
+    gap: 14px;
+  }
+
+  .public-navbar-left,
+  .public-navbar-right,
+  .public-nav-links {
+    justify-content: center;
+  }
+
+  .public-nav-links {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 520px) {
+  .public-nav-links {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .public-nav-links a,
+  .public-login-btn {
+    text-align: center;
+  }
+}
+
 /* Drawer */
 
 .admin-drawer {

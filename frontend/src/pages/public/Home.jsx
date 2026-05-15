@@ -139,18 +139,6 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="home-feature-card orange-border">
-            <span>🎥</span>
-            <h3>Video & visual guides</h3>
-            <p>
-              Watch short instructional videos and illustrated diagrams alongside
-              each emergency topic.
-            </p>
-            <Link to="/emergency-search" className="home-feature-link">
-              View examples →
-            </Link>
-          </div>
-
           <div className="home-feature-card red-border">
             <span>🧠</span>
             <h3>Quiz & test yourself</h3>

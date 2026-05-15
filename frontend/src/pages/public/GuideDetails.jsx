@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { useState } from "react";
-import { guides } from "../data/guides";
+import { guides } from "../../data/guides";
 
 const GUIDES_PER_PAGE = 5;
 

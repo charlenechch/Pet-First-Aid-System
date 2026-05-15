@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { guides } from "../data/guides";
+import { guides } from "../../data/guides";
 
 const PETS = ["All Pets", "Dog", "Cat", "Rabbit", "Bird"];
 const PET_ICONS = { "All Pets": "🐾", Dog: "🐶", Cat: "🐱", Rabbit: "🐰", Bird: "🐦" };
