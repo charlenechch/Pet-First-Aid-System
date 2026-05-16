@@ -17,7 +17,7 @@ import GuideDetails from "./pages/public/GuideDetails";
 import Login from "./pages/public/Login";
 import Register from "./pages/public/Register";
 import ForgotPassword from "./pages/public/ForgotPassword";
-import Feedback from "./pages/public/Feedback";
+import PublicFeedback from "./pages/public/Feedback";
 import Quiz from "./pages/public/Quiz";
 
 // Admin pages
@@ -29,20 +29,32 @@ import ManageFeedback from "./pages/admin/ManageFeedback";
 import ManageUsers from "./pages/admin/ManageUsers";
 import AdminProfile from "./pages/admin/AdminProfile";
 
+// Pet Owner pages
+import PetOwnerLayout from "./layouts/PetOwnerLayout";
+import PetOwnerDashboard from "./pages/petowner/PetOwnerDashboard";
+import Profile from "./pages/petowner/Profile";
+import Bookmark from "./pages/petowner/Bookmark";
+import QuizList from "./pages/petowner/QuizList";
+import QuizAttempt from "./pages/petowner/QuizAttempt";
+import QuizResult from "./pages/petowner/QuizResult";
+import PetOwnerFeedback from "./pages/petowner/Feedback";
+
 function App() {
   const location = useLocation();
 
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const isPetOwnerRoute = location.pathname.startsWith("/petowner");
 
   const hideFooterRoutes = ["/login", "/register", "/forgot-password"];
-  const hideFooter = hideFooterRoutes.includes(location.pathname) || isAdminRoute;
+  const hideFooter =
+    hideFooterRoutes.includes(location.pathname) || isAdminRoute || isPetOwnerRoute;
 
   return (
     <>
       <ScrollToTop />
 
-      {/* Show public Navbar only for public/customer pages */}
-      {!isAdminRoute && <Navbar />}
+      {/* Show public Navbar only for public pages */}
+      {!isAdminRoute && !isPetOwnerRoute && <Navbar />}
 
       <Routes>
         {/* Public routes */}
@@ -54,7 +66,7 @@ function App() {
 
         <Route path="/guide-details/:id" element={<GuideDetails />} />
 
-        <Route path="/feedback" element={<Feedback />} />
+        <Route path="/feedback" element={<PublicFeedback />} />
         <Route path="/quiz" element={<Quiz />} />
 
         <Route path="/login" element={<Login />} />
@@ -73,11 +85,23 @@ function App() {
           <Route path="profile" element={<AdminProfile />} />
         </Route>
 
+        {/* Pet Owner routes */}
+        <Route path="/petowner" element={<PetOwnerLayout />}>
+          <Route index element={<Navigate to="/petowner/dashboard" replace />} />
+          <Route path="dashboard" element={<PetOwnerDashboard />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="bookmarks" element={<Bookmark />} />
+          <Route path="quizzes" element={<QuizList />} />
+          <Route path="quizzes/:quizId/attempt" element={<QuizAttempt />} />
+          <Route path="quizzes/:quizId/result" element={<QuizResult />} />
+          <Route path="feedback" element={<PetOwnerFeedback />} />
+        </Route>
+
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* Hide footer on admin and auth pages */}
+      {/* Hide footer on admin, pet owner and auth pages */}
       {!hideFooter && <Footer />}
     </>
   );

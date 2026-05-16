@@ -14,7 +14,7 @@ const GUIDE_CATEGORIES = [
   { value: "cpr",            label: "❤️ Pet CPR Guide",          color: "#FCEBEB", text: "#A32D2D" },
 ];
 
-export default function Feedback() {
+export default function PublicFeedback() {
   const [submitted, setSubmitted] = useState(false);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
