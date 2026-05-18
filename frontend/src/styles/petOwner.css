@@ -559,3 +559,159 @@
 .page-title-row.with-action {
   margin-bottom: 28px;
 }
+
+/* ===== PET OWNER LOGOUT MODAL ONLY ===== */
+
+.po-logout-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 35, 28, 0.45);
+  backdrop-filter: blur(6px);
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: poLogoutFadeIn 0.2s ease both;
+}
+
+.po-logout-modal {
+  width: 100%;
+  max-width: 430px;
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 36px 32px;
+  text-align: center;
+  border: 1px solid #ddeee4;
+  box-shadow: 0 24px 70px rgba(31, 63, 49, 0.22);
+  animation: poLogoutPopIn 0.25s ease both;
+}
+
+.po-logout-modal-icon {
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: #edf8ee;
+  color: #2d6a4f;
+  display: grid;
+  place-items: center;
+  font-size: 34px;
+  box-shadow: 0 10px 28px rgba(45, 106, 79, 0.16);
+}
+
+.po-logout-modal h2 {
+  font-size: 28px;
+  color: #2d6a4f;
+  margin-bottom: 10px;
+  font-family: "Playfair Display", serif;
+}
+
+.po-logout-modal p {
+  color: #6f7c73;
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 26px;
+}
+
+.po-logout-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.po-logout-cancel-btn,
+.po-logout-confirm-btn {
+  flex: 1;
+  border: none;
+  border-radius: 50px;
+  padding: 13px 18px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.po-logout-cancel-btn {
+  background: #f5f9f6;
+  color: #2d6a4f;
+  border: 1.5px solid #ddeee4;
+}
+
+.po-logout-cancel-btn:hover {
+  background: #edf8ee;
+  transform: translateY(-1px);
+}
+
+.po-logout-confirm-btn {
+  background: linear-gradient(135deg, #2d6a4f, #1b4332);
+  color: white;
+  box-shadow: 0 8px 22px rgba(45, 106, 79, 0.24);
+}
+
+.po-logout-confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(45, 106, 79, 0.32);
+}
+
+@keyframes poLogoutFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes poLogoutPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 500px) {
+  .po-logout-modal {
+    padding: 30px 24px;
+  }
+
+  .po-logout-modal-actions {
+    flex-direction: column;
+  }
+}
+/* Pet owner top navbar Home button only */
+.po-home-btn {
+  background: #1f3f31;
+  color: #ffffff;
+  border: 1.5px solid #1f3f31;
+  padding: 10px 24px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 8px 18px rgba(31, 63, 49, 0.18);
+}
+
+.po-home-btn:hover {
+  background: #2f5f46;
+  border-color: #2f5f46;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(31, 63, 49, 0.24);
+}
+
+.po-home-btn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 600px) {
+  .po-home-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}

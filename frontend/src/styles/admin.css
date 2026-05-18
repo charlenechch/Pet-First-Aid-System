@@ -1056,3 +1056,377 @@ textarea {
     height: 36px;
   }
 }
+
+.public-logout-btn {
+  background: #e76f51;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 30px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  transition: 0.2s;
+}
+
+.public-logout-btn:hover {
+  background: #d85f43;
+  transform: translateY(-1px);
+}
+
+/* ===== ADMIN LOGOUT MODAL ONLY ===== */
+
+.ad-logout-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 35, 28, 0.45);
+  backdrop-filter: blur(6px);
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: adLogoutFadeIn 0.2s ease both;
+}
+
+.ad-logout-modal {
+  width: 100%;
+  max-width: 430px;
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 36px 32px;
+  text-align: center;
+  border: 1px solid #ddeee4;
+  box-shadow: 0 24px 70px rgba(31, 63, 49, 0.22);
+  animation: adLogoutPopIn 0.25s ease both;
+}
+
+.ad-logout-modal-icon {
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: #edf8ee;
+  color: #2d6a4f;
+  display: grid;
+  place-items: center;
+  font-size: 34px;
+  box-shadow: 0 10px 28px rgba(45, 106, 79, 0.16);
+}
+
+.ad-logout-modal h2 {
+  font-size: 28px;
+  color: #2d6a4f;
+  margin-bottom: 10px;
+  font-family: "Playfair Display", serif;
+}
+
+.ad-logout-modal p {
+  color: #6f7c73;
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 26px;
+}
+
+.ad-logout-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.ad-logout-cancel-btn,
+.ad-logout-confirm-btn {
+  flex: 1;
+  border: none;
+  border-radius: 50px;
+  padding: 13px 18px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.ad-logout-cancel-btn {
+  background: #f5f9f6;
+  color: #2d6a4f;
+  border: 1.5px solid #ddeee4;
+}
+
+.ad-logout-cancel-btn:hover {
+  background: #edf8ee;
+  transform: translateY(-1px);
+}
+
+.ad-logout-confirm-btn {
+  background: linear-gradient(135deg, #2d6a4f, #1b4332);
+  color: white;
+  box-shadow: 0 8px 22px rgba(45, 106, 79, 0.24);
+}
+
+.ad-logout-confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(45, 106, 79, 0.32);
+}
+
+@keyframes adLogoutFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes adLogoutPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 500px) {
+  .ad-logout-modal {
+    padding: 30px 24px;
+  }
+
+  .ad-logout-modal-actions {
+    flex-direction: column;
+  }
+}
+
+/* Admin top navbar Home button only */
+.admin-home-btn {
+  background: #1f3f31;
+  color: #ffffff;
+  border: 1.5px solid #1f3f31;
+  padding: 10px 24px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 8px 18px rgba(31, 63, 49, 0.18);
+}
+
+.admin-home-btn:hover {
+  background: #2f5f46;
+  border-color: #2f5f46;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(31, 63, 49, 0.24);
+}
+
+.admin-home-btn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 600px) {
+  .admin-home-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+/* ===== PUBLIC NAVBAR LOGOUT POPUP ONLY ===== */
+
+.public-logout-btn {
+  background: #e76f51;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 30px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  transition: 0.2s;
+}
+
+.public-logout-btn:hover {
+  background: #d85f43;
+  transform: translateY(-1px);
+}
+
+.public-logout-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 35, 28, 0.45);
+  backdrop-filter: blur(6px);
+  z-index: 4000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: publicLogoutFadeIn 0.2s ease both;
+}
+
+.public-logout-modal {
+  width: 100%;
+  max-width: 430px;
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 36px 32px;
+  text-align: center;
+  border: 1px solid #ddeee4;
+  box-shadow: 0 24px 70px rgba(31, 63, 49, 0.22);
+  animation: publicLogoutPopIn 0.25s ease both;
+}
+
+.public-logout-modal-icon {
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: #edf8ee;
+  color: #2d6a4f;
+  display: grid;
+  place-items: center;
+  font-size: 34px;
+  box-shadow: 0 10px 28px rgba(45, 106, 79, 0.16);
+}
+
+.public-logout-modal h2 {
+  font-size: 28px;
+  color: #2d6a4f;
+  margin-bottom: 10px;
+  font-family: "Playfair Display", serif;
+}
+
+.public-logout-modal p {
+  color: #6f7c73;
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 26px;
+}
+
+.public-logout-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.public-logout-cancel-btn,
+.public-logout-confirm-btn {
+  flex: 1;
+  border: none;
+  border-radius: 50px;
+  padding: 13px 18px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.public-logout-cancel-btn {
+  background: #f5f9f6;
+  color: #2d6a4f;
+  border: 1.5px solid #ddeee4;
+}
+
+.public-logout-cancel-btn:hover {
+  background: #edf8ee;
+  transform: translateY(-1px);
+}
+
+.public-logout-confirm-btn {
+  background: linear-gradient(135deg, #2d6a4f, #1b4332);
+  color: white;
+  box-shadow: 0 8px 22px rgba(45, 106, 79, 0.24);
+}
+
+.public-logout-confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(45, 106, 79, 0.32);
+}
+
+/* Small success toast after logout */
+.public-logout-success {
+  position: fixed;
+  top: 96px;
+  right: 24px;
+  z-index: 4500;
+  background: #ffffff;
+  border: 1.5px solid #b7dfc3;
+  border-radius: 18px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 16px 45px rgba(31, 63, 49, 0.16);
+  animation: publicLogoutToastIn 0.25s ease both;
+}
+
+.public-logout-success-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #2d6a4f;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.public-logout-success strong {
+  display: block;
+  color: #2d6a4f;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.public-logout-success p {
+  margin: 0;
+  color: #6f7c73;
+  font-size: 12px;
+}
+
+@keyframes publicLogoutFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes publicLogoutPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes publicLogoutToastIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .public-logout-modal {
+    padding: 30px 24px;
+  }
+
+  .public-logout-modal-actions {
+    flex-direction: column;
+  }
+
+  .public-logout-success {
+    left: 16px;
+    right: 16px;
+    top: 90px;
+  }
+}

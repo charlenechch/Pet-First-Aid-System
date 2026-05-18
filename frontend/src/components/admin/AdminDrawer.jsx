@@ -1,13 +1,27 @@
-import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import "../../styles/admin.css";
 
 function AdminDrawer({ isOpen, onClose }) {
-  function handleLogout() {
-    const confirmLogout = window.confirm("Are you sure you want to log out?");
+  const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-    if (!confirmLogout) return;
+  function openLogoutModal() {
+    setShowLogoutModal(true);
+  }
 
-    alert("Logged out successfully. This is hardcoded for now.");
+  function closeLogoutModal() {
+    setShowLogoutModal(false);
+  }
+
+  function handleLogoutConfirm() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    setShowLogoutModal(false);
+    onClose();
+
+    navigate("/", { replace: true });
   }
 
   return (
@@ -63,7 +77,7 @@ function AdminDrawer({ isOpen, onClose }) {
           </nav>
 
           <div className="drawer-logout-area">
-            <button className="drawer-logout-btn" onClick={handleLogout}>
+            <button className="drawer-logout-btn" onClick={openLogoutModal}>
               <span>🚪</span>
               Log out
             </button>
@@ -72,6 +86,39 @@ function AdminDrawer({ isOpen, onClose }) {
       </aside>
 
       {isOpen && <div className="drawer-overlay" onClick={onClose}></div>}
+
+      {showLogoutModal && (
+        <div className="ad-logout-modal-overlay">
+          <div className="ad-logout-modal">
+            <div className="ad-logout-modal-icon">🚪</div>
+
+            <h2>Log out?</h2>
+
+            <p>
+              You will be signed out from the PawGuard admin panel. You can log
+              in again anytime using your admin account.
+            </p>
+
+            <div className="ad-logout-modal-actions">
+              <button
+                type="button"
+                className="ad-logout-cancel-btn"
+                onClick={closeLogoutModal}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="ad-logout-confirm-btn"
+                onClick={handleLogoutConfirm}
+              >
+                Yes, log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -1,14 +1,28 @@
-import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import "../../styles/admin.css";
 import "../../styles/petOwner.css";
 
 function PetOwnerDrawer({ isOpen, onClose }) {
-  function handleLogout() {
-    const confirmLogout = window.confirm("Are you sure you want to log out?");
+  const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-    if (!confirmLogout) return;
+  function openLogoutModal() {
+    setShowLogoutModal(true);
+  }
 
-    alert("Logged out successfully. This is hardcoded for now.");
+  function closeLogoutModal() {
+    setShowLogoutModal(false);
+  }
+
+  function handleLogoutConfirm() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    setShowLogoutModal(false);
+    onClose();
+
+    navigate("/", { replace: true });
   }
 
   return (
@@ -54,7 +68,7 @@ function PetOwnerDrawer({ isOpen, onClose }) {
           </nav>
 
           <div className="drawer-logout-area">
-            <button className="drawer-logout-btn" onClick={handleLogout}>
+            <button className="drawer-logout-btn" onClick={openLogoutModal}>
               <span>🚪</span>
               Log out
             </button>
@@ -63,6 +77,39 @@ function PetOwnerDrawer({ isOpen, onClose }) {
       </aside>
 
       {isOpen && <div className="drawer-overlay" onClick={onClose}></div>}
+
+      {showLogoutModal && (
+        <div className="po-logout-modal-overlay">
+          <div className="po-logout-modal">
+            <div className="po-logout-modal-icon">🚪</div>
+
+            <h2>Log out?</h2>
+
+            <p>
+              You will be signed out from your PawGuard pet owner account. You
+              can log in again anytime.
+            </p>
+
+            <div className="po-logout-modal-actions">
+              <button
+                type="button"
+                className="po-logout-cancel-btn"
+                onClick={closeLogoutModal}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="po-logout-confirm-btn"
+                onClick={handleLogoutConfirm}
+              >
+                Yes, log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
