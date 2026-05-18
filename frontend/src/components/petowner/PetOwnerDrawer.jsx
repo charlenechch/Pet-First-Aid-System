@@ -5,7 +5,9 @@ import "../../styles/petOwner.css";
 
 function PetOwnerDrawer({ isOpen, onClose }) {
   const navigate = useNavigate();
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
 
   function openLogoutModal() {
     setShowLogoutModal(true);
@@ -20,9 +22,13 @@ function PetOwnerDrawer({ isOpen, onClose }) {
     localStorage.removeItem("user");
 
     setShowLogoutModal(false);
-    onClose();
+    setShowLogoutSuccess(true);
 
-    navigate("/", { replace: true });
+    setTimeout(() => {
+      setShowLogoutSuccess(false);
+      onClose();
+      navigate("/", { replace: true });
+    }, 1200);
   }
 
   return (
@@ -107,6 +113,17 @@ function PetOwnerDrawer({ isOpen, onClose }) {
                 Yes, log out
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showLogoutSuccess && (
+        <div className="po-logout-success">
+          <div className="po-logout-success-icon">✓</div>
+
+          <div>
+            <strong>Logged out successfully</strong>
+            <p>You are returning to the home page.</p>
           </div>
         </div>
       )}

@@ -20,7 +20,6 @@ app.post("/api/auth/register", async (req, res) => {
   try {
     const { name, email, phone_no, password } = req.body;
 
-    // validation
     if (!name || !email || !phone_no || !password) {
       return res.status(400).json({
         message: "Please fill in all required fields.",
@@ -33,7 +32,6 @@ app.post("/api/auth/register", async (req, res) => {
       });
     }
 
-    // check email already exists
     const [existingUsers] = await pool.query(
       "SELECT userID FROM users WHERE email = ?",
       [email]
@@ -45,10 +43,8 @@ app.post("/api/auth/register", async (req, res) => {
       });
     }
 
-    // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // insert new user
     const [result] = await pool.query(
       `INSERT INTO users 
        (name, email, phone_no, password, role, status)
@@ -56,16 +52,19 @@ app.post("/api/auth/register", async (req, res) => {
       [name, email, phone_no, hashedPassword]
     );
 
+    // Get the newly created user including created_at
+    const [newUsers] = await pool.query(
+      `SELECT userID, name, email, phone_no, role, status, bio, last_login, created_at
+       FROM users
+       WHERE userID = ?`,
+      [result.insertId]
+    );
+
+    const newUser = newUsers[0];
+
     res.status(201).json({
       message: "Account registered successfully.",
-      user: {
-        userID: result.insertId,
-        name,
-        email,
-        phone_no,
-        role: "pet_owner",
-        status: "Active",
-      },
+      user: newUser,
     });
   } catch (error) {
     console.error("Register error:", error);
@@ -114,18 +113,27 @@ app.post("/api/auth/login", async (req, res) => {
       });
     }
 
-    // update last login
+    // update last login time after successful login
     await pool.query(
-      "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE userID = ?",
+      "UPDATE users SET last_login = NOW() WHERE userID = ?",
       [user.userID]
     );
+    console.log("Last login updated for:", user.email, "userID:", user.userID);
+
+    // get updated user after last_login update
+    const [updatedUsers] = await pool.query(
+      "SELECT userID, name, email, phone_no, role, status, bio, last_login, created_at FROM users WHERE userID = ?",
+      [user.userID]
+    );
+
+    const updatedUser = updatedUsers[0];
 
     // create token
     const token = jwt.sign(
       {
-        userID: user.userID,
-        email: user.email,
-        role: user.role,
+        userID: updatedUser.userID,
+        email: updatedUser.email,
+        role: updatedUser.role,
       },
       process.env.JWT_SECRET || "default_secret",
       {
@@ -137,12 +145,14 @@ app.post("/api/auth/login", async (req, res) => {
       message: "Login successful.",
       token,
       user: {
-        userID: user.userID,
-        name: user.name,
-        email: user.email,
-        phone_no: user.phone_no,
-        role: user.role,
-        status: user.status,
+        userID: updatedUser.userID,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone_no: updatedUser.phone_no,
+        role: updatedUser.role,
+        status: updatedUser.status,
+        bio: updatedUser.bio,
+        last_login: updatedUser.last_login,
       },
     });
   } catch (error) {

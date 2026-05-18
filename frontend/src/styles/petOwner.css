@@ -715,3 +715,66 @@
     font-size: 13px;
   }
 }
+
+/* ===== PET OWNER LOGOUT SUCCESS TOAST ONLY ===== */
+
+.po-logout-success {
+  position: fixed;
+  top: 96px;
+  right: 24px;
+  z-index: 4500;
+  background: #ffffff;
+  border: 1.5px solid #b7dfc3;
+  border-radius: 18px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 16px 45px rgba(31, 63, 49, 0.16);
+  animation: poLogoutToastIn 0.25s ease both;
+}
+
+.po-logout-success-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #2d6a4f;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.po-logout-success strong {
+  display: block;
+  color: #2d6a4f;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.po-logout-success p {
+  margin: 0;
+  color: #6f7c73;
+  font-size: 12px;
+}
+
+@keyframes poLogoutToastIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .po-logout-success {
+    left: 16px;
+    right: 16px;
+    top: 90px;
+  }
+}

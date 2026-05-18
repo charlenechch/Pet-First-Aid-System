@@ -5,7 +5,9 @@ import "../../styles/petOwner.css";
 
 function PetOwnerTopNavbar({ onMenuClick }) {
   const navigate = useNavigate();
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
 
   function openLogoutModal() {
     setShowLogoutModal(true);
@@ -20,7 +22,12 @@ function PetOwnerTopNavbar({ onMenuClick }) {
     localStorage.removeItem("user");
 
     setShowLogoutModal(false);
-    navigate("/", { replace: true });
+    setShowLogoutSuccess(true);
+
+    setTimeout(() => {
+      setShowLogoutSuccess(false);
+      navigate("/", { replace: true });
+    }, 1200);
   }
 
   function handleGoHome() {
@@ -100,6 +107,17 @@ function PetOwnerTopNavbar({ onMenuClick }) {
                 Yes, log out
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showLogoutSuccess && (
+        <div className="po-logout-success">
+          <div className="po-logout-success-icon">✓</div>
+
+          <div>
+            <strong>Logged out successfully</strong>
+            <p>You are returning to the home page.</p>
           </div>
         </div>
       )}

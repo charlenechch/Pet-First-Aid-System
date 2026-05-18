@@ -4,7 +4,9 @@ import "../../styles/admin.css";
 
 function TopNavbar({ onMenuClick }) {
   const navigate = useNavigate();
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
 
   function openLogoutModal() {
     setShowLogoutModal(true);
@@ -19,7 +21,12 @@ function TopNavbar({ onMenuClick }) {
     localStorage.removeItem("user");
 
     setShowLogoutModal(false);
-    navigate("/", { replace: true });
+    setShowLogoutSuccess(true);
+
+    setTimeout(() => {
+      setShowLogoutSuccess(false);
+      navigate("/", { replace: true });
+    }, 1200);
   }
 
   function handleGoHome() {
@@ -48,7 +55,11 @@ function TopNavbar({ onMenuClick }) {
         </div>
 
         <div className="top-navbar-right">
-          <button type="button" className="admin-home-btn" onClick={handleGoHome}>
+          <button
+            type="button"
+            className="admin-home-btn"
+            onClick={handleGoHome}
+          >
             Home
           </button>
 
@@ -95,6 +106,17 @@ function TopNavbar({ onMenuClick }) {
                 Yes, log out
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showLogoutSuccess && (
+        <div className="ad-logout-success">
+          <div className="ad-logout-success-icon">✓</div>
+
+          <div>
+            <strong>Logged out successfully</strong>
+            <p>You are returning to the home page.</p>
           </div>
         </div>
       )}

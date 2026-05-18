@@ -1,196 +1,176 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
+import "../../styles/admin.css";
 
-const API_BASE_URL = "http://localhost:5000";
-
-export default function Login() {
+export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const isHome = location.pathname === "/";
 
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const savedUser = localStorage.getItem("user");
+  let user = null;
 
-  const handleLogin = async (e) => {
+  try {
+    user = savedUser ? JSON.parse(savedUser) : null;
+  } catch (error) {
+    console.error("Invalid user data in localStorage:", error);
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    user = null;
+  }
+
+  const handleHomeClick = (e) => {
     e.preventDefault();
 
-    setError("");
-    setMessage("");
+    if (isHome) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      navigate("/");
+    }
+  };
 
-    if (!formData.email || !formData.password) {
-      setError("Please enter email and password.");
+  const handleDashboardClick = () => {
+    if (!user) {
+      navigate("/login");
       return;
     }
 
-    try {
-      setLoading(true);
-
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Login failed. Please try again.");
-        return;
-      }
-
-      // Save login data
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      setMessage("Login successful. Redirecting...");
-
-      // Redirect based on role
-      setTimeout(() => {
-        if (data.user.role === "admin") {
-          navigate("/admin/dashboard");
-        } else if (data.user.role === "pet_owner") {
-          navigate("/petowner/dashboard");
-        } else {
-          navigate("/");
-        }
-      }, 900);
-    } catch (error) {
-      console.error("Login error:", error);
-      setError("Cannot connect to server. Please make sure backend is running.");
-    } finally {
-      setLoading(false);
+    if (user.role === "admin") {
+      navigate("/admin/dashboard");
+    } else if (user.role === "pet_owner") {
+      navigate("/petowner/dashboard");
+    } else {
+      navigate("/");
     }
   };
 
+  const openLogoutModal = () => {
+    setShowLogoutModal(true);
+  };
+
+  const closeLogoutModal = () => {
+    setShowLogoutModal(false);
+  };
+
+  const handleLogoutConfirm = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    setShowLogoutModal(false);
+    setShowLogoutSuccess(true);
+
+    navigate("/", { replace: true });
+
+    setTimeout(() => {
+      setShowLogoutSuccess(false);
+    }, 1800);
+  };
+
+  const dashboardLabel =
+    user?.role === "admin" ? "Admin Dashboard" : "My Dashboard";
+
   return (
-    <main className="login-page">
-      <section className="login-left">
-        <div className="login-left-content">
-          <div className="login-brand-icon">🐾</div>
-          <h1>Welcome back to PawGuard</h1>
-          <p>
-            Access saved guides, pet profiles, and emergency first-aid support
-            anytime.
-          </p>
+    <>
+      <header className="public-top-navbar">
+        <div className="public-navbar-left">
+          <Link to="/" className="brand-area brand-link" onClick={handleHomeClick}>
+            <div className="brand-logo">🐾</div>
 
-          <div className="login-quote">
-            <span className="quote-mark">&ldquo;</span>
-            The best time to learn pet first-aid is before you need it.
-            <span className="quote-mark">&rdquo;</span>
-          </div>
-
-          <div className="login-paws">
-            <span>🐾</span>
-            <span>🐾</span>
-            <span>🐾</span>
-          </div>
+            <h1 className="brand-name">
+              Paw<span>Guard</span>
+            </h1>
+          </Link>
         </div>
-      </section>
 
-      <section className="login-right">
-        <div className="login-card">
-          <div className="login-card-header">
-            <div className="login-card-icon">🐶</div>
-            <h2>Welcome back</h2>
-            <p className="login-subtitle">Sign in to your PawGuard account</p>
-          </div>
+        <nav className="public-nav-links">
+          <a
+            href="/"
+            className={isHome ? "active" : ""}
+            onClick={handleHomeClick}
+          >
+            Home
+          </a>
 
-          <form className="login-form" onSubmit={handleLogin}>
-            {error && (
-              <div className="auth-alert error">
-                <div className="auth-alert-icon">!</div>
-                <div className="auth-alert-text">
-                  <strong>Login failed</strong>
-                  {error}
-                </div>
-              </div>
-            )}
+          <NavLink to="/emergency-search">Guides</NavLink>
+          <NavLink to="/quiz">Quizzes</NavLink>
+          <NavLink to="/feedback">Feedback</NavLink>
+          <NavLink to="/about">About</NavLink>
+        </nav>
 
-            {message && (
-              <div className="auth-alert success">
-                <div className="auth-alert-icon">✓</div>
-                <div className="auth-alert-text">
-                  <strong>Login successful</strong>
-                  {message}
-                </div>
-              </div>
-            )}
+        <div className="public-navbar-right">
+          {user ? (
+            <>
+              <button
+                type="button"
+                className="public-login-btn"
+                onClick={handleDashboardClick}
+              >
+                {dashboardLabel}
+              </button>
 
-            <div className="input-group">
-              <label>Email address</label>
-              <div className="input-wrapper">
-                <span className="input-icon">✉️</span>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-              </div>
-            </div>
+              <button
+                type="button"
+                className="public-logout-btn"
+                onClick={openLogoutModal}
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <NavLink to="/login" className="public-login-btn">
+              Login
+            </NavLink>
+          )}
+        </div>
+      </header>
 
-            <div className="input-group">
-              <label>Password</label>
-              <div className="input-wrapper">
-                <span className="input-icon">🔒</span>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-              </div>
-            </div>
+      {showLogoutModal && (
+        <div className="public-logout-modal-overlay">
+          <div className="public-logout-modal">
+            <div className="public-logout-modal-icon">🚪</div>
 
-            <div className="login-options">
-              <label className="remember-label">
-                <input type="checkbox" disabled={loading} />
-                <span>Remember me</span>
-              </label>
+            <h2>Log out?</h2>
 
-              <Link to="/forgot-password" className="forgot-link">
-                Forgot password?
-              </Link>
-            </div>
-
-            <button className="login-btn" type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  Signing in<span className="auth-loading-dots"></span>
-                </>
-              ) : (
-                <>
-                  Sign In <span className="btn-arrow">{"→"}</span>
-                </>
-              )}
-            </button>
-
-            <p className="login-footer-text">
-              New here? <Link to="/register">Create an account</Link>
+            <p>
+              You will be signed out from your PawGuard account. You can log in
+              again anytime using your email and password.
             </p>
-          </form>
+
+            <div className="public-logout-modal-actions">
+              <button
+                type="button"
+                className="public-logout-cancel-btn"
+                onClick={closeLogoutModal}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="public-logout-confirm-btn"
+                onClick={handleLogoutConfirm}
+              >
+                Yes, log out
+              </button>
+            </div>
+          </div>
         </div>
-      </section>
-    </main>
+      )}
+
+      {showLogoutSuccess && (
+        <div className="public-logout-success">
+          <div className="public-logout-success-icon">✓</div>
+
+          <div>
+            <strong>Logged out successfully</strong>
+            <p>You have returned to the home page.</p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
