@@ -118,7 +118,6 @@ app.post("/api/auth/login", async (req, res) => {
       "UPDATE users SET last_login = NOW() WHERE userID = ?",
       [user.userID]
     );
-    console.log("Last login updated for:", user.email, "userID:", user.userID);
 
     // get updated user after last_login update
     const [updatedUsers] = await pool.query(

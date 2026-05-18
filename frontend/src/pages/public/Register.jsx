@@ -16,7 +16,7 @@ export default function Register() {
   });
 
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -26,7 +26,6 @@ export default function Register() {
     });
 
     setError("");
-    setMessage("");
   };
 
   const getPasswordStrength = () => {
@@ -66,7 +65,7 @@ export default function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
-    setMessage("");
+    setShowSuccessToast(false);
 
     if (
       !formData.firstName ||
@@ -113,11 +112,11 @@ export default function Register() {
         return;
       }
 
-      setMessage("Redirecting you to the login page...");
+      setShowSuccessToast(true);
 
       setTimeout(() => {
         navigate("/login");
-      }, 1200);
+      }, 1400);
     } catch (error) {
       console.error("Register error:", error);
       setError("Cannot connect to server. Please make sure backend is running.");
@@ -130,6 +129,17 @@ export default function Register() {
 
   return (
     <main className="register-page">
+      {showSuccessToast && (
+        <div className="register-success-toast">
+          <div className="register-success-toast-icon">✓</div>
+
+          <div>
+            <strong>Account created successfully</strong>
+            <p>Redirecting you to the login page...</p>
+          </div>
+        </div>
+      )}
+
       <section className="register-left">
         <div className="register-left-content">
           <div className="register-brand-icon">🐾</div>
@@ -168,16 +178,6 @@ export default function Register() {
                 <div className="auth-alert-text">
                   <strong>Registration failed</strong>
                   {error}
-                </div>
-              </div>
-            )}
-
-            {message && (
-              <div className="auth-alert success">
-                <div className="auth-alert-icon">✓</div>
-                <div className="auth-alert-text">
-                  <strong>Account created successfully</strong>
-                  {message}
                 </div>
               </div>
             )}
@@ -263,18 +263,10 @@ export default function Register() {
               <p className="strength-label">Password strength</p>
 
               <div className="strength-bars">
-                <div
-                  className={`strength-bar ${strength >= 1 ? "active" : ""}`}
-                ></div>
-                <div
-                  className={`strength-bar ${strength >= 2 ? "active" : ""}`}
-                ></div>
-                <div
-                  className={`strength-bar ${strength >= 3 ? "active" : ""}`}
-                ></div>
-                <div
-                  className={`strength-bar ${strength >= 4 ? "active" : ""}`}
-                ></div>
+                <div className={`strength-bar ${strength >= 1 ? "active" : ""}`}></div>
+                <div className={`strength-bar ${strength >= 2 ? "active" : ""}`}></div>
+                <div className={`strength-bar ${strength >= 3 ? "active" : ""}`}></div>
+                <div className={`strength-bar ${strength >= 4 ? "active" : ""}`}></div>
               </div>
 
               <p className="strength-hint">{getStrengthText()}</p>

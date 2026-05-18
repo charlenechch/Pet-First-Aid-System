@@ -44,19 +44,16 @@ function App() {
   const isAdminRoute = location.pathname.startsWith("/admin");
   const isPetOwnerRoute = location.pathname.startsWith("/petowner");
 
-  // Hide public navbar and footer on auth pages
-  const authRoutes = ["/login", "/register", "/forgot-password"];
-  const isAuthRoute = authRoutes.includes(location.pathname);
-
-  const hideNavbar = isAdminRoute || isPetOwnerRoute || isAuthRoute;
-  const hideFooter = isAdminRoute || isPetOwnerRoute || isAuthRoute;
+  const hideFooterRoutes = ["/login", "/register", "/forgot-password"];
+  const hideFooter =
+    hideFooterRoutes.includes(location.pathname) || isAdminRoute || isPetOwnerRoute;
 
   return (
     <>
       <ScrollToTop />
 
-      {/* Show public Navbar only on normal public pages */}
-      {!hideNavbar && <Navbar />}
+      {/* Show public Navbar only for public pages */}
+      {!isAdminRoute && !isPetOwnerRoute && <Navbar />}
 
       <Routes>
         {/* Public routes */}
@@ -103,7 +100,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* Show footer only on normal public pages */}
+      {/* Hide footer on admin, pet owner and auth pages */}
       {!hideFooter && <Footer />}
     </>
   );
