@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { petOwnerProfile as initialProfile } from "../../data/petOwnerData";
+import {
+  petOwnerProfile as initialProfile,
+  petTypes,
+} from "../../data/petOwnerData";
 import "../../styles/admin.css";
 import "../../styles/petOwner.css";
 
 function Profile() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isPetModalOpen, setIsPetModalOpen] = useState(false);
 
   const [profile, setProfile] = useState(initialProfile);
   const [profileForm, setProfileForm] = useState(initialProfile);
@@ -16,6 +20,14 @@ function Profile() {
     confirmPassword: "",
   });
 
+  // Pet form state — used for both Add and Edit
+  const [petForm, setPetForm] = useState({
+    id: null,
+    type: "",
+    name: "",
+    breed: "",
+  });
+
   function getInitials(name) {
     return name
       .split(" ")
@@ -24,6 +36,13 @@ function Profile() {
       .slice(0, 2)
       .toUpperCase();
   }
+
+  function getPetEmoji(typeName) {
+    const match = petTypes.find((petType) => petType.name === typeName);
+    return match ? match.emoji : "🐾";
+  }
+
+  // ----- Profile edit -----
 
   function openEditModal() {
     setProfileForm(profile);
@@ -54,6 +73,8 @@ function Profile() {
 
     setIsEditModalOpen(false);
   }
+
+  // ----- Password -----
 
   function openPasswordModal() {
     setPasswordForm({
@@ -95,6 +116,92 @@ function Profile() {
     alert("Password changed successfully. This is hardcoded for now.");
     setIsPasswordModalOpen(false);
   }
+
+  // ----- Pet management -----
+
+  function openAddPetModal() {
+    setPetForm({ id: null, type: "", name: "", breed: "" });
+    setIsPetModalOpen(true);
+  }
+
+  function openEditPetModal(pet) {
+    setPetForm({
+      id: pet.id,
+      type: pet.type,
+      name: pet.name,
+      breed: pet.breed || "",
+    });
+    setIsPetModalOpen(true);
+  }
+
+  function closePetModal() {
+    setIsPetModalOpen(false);
+  }
+
+  function handlePetSubmit(event) {
+    event.preventDefault();
+
+    if (!petForm.type) {
+      alert("Please select a pet type.");
+      return;
+    }
+
+    if (!petForm.name.trim()) {
+      alert("Please enter your pet's name.");
+      return;
+    }
+
+    const emoji = getPetEmoji(petForm.type);
+
+    if (petForm.id) {
+      // Edit existing pet
+      setProfile((prev) => ({
+        ...prev,
+        pets: prev.pets.map((pet) =>
+          pet.id === petForm.id
+            ? {
+                ...pet,
+                type: petForm.type,
+                name: petForm.name.trim(),
+                breed: petForm.breed.trim(),
+                emoji,
+              }
+            : pet
+        ),
+      }));
+    } else {
+      // Add new pet
+      const newPet = {
+        id: Date.now(),
+        type: petForm.type,
+        name: petForm.name.trim(),
+        breed: petForm.breed.trim(),
+        emoji,
+      };
+
+      setProfile((prev) => ({
+        ...prev,
+        pets: [...prev.pets, newPet],
+      }));
+    }
+
+    closePetModal();
+  }
+
+  function removePet(pet) {
+    const confirmRemove = window.confirm(
+      `Remove ${pet.name} (${pet.type}) from your pets?`
+    );
+
+    if (!confirmRemove) return;
+
+    setProfile((prev) => ({
+      ...prev,
+      pets: prev.pets.filter((item) => item.id !== pet.id),
+    }));
+  }
+
+  // ----- Renderers -----
 
   function renderEditModal() {
     if (!isEditModalOpen) return null;
@@ -274,10 +381,92 @@ function Profile() {
     );
   }
 
+  function renderPetModal() {
+    if (!isPetModalOpen) return null;
+
+    return (
+      <div className="modal-backdrop" onClick={closePetModal}>
+        <section
+          className="admin-modal profile-modal"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="modal-header">
+            <div>
+              <p className="page-subtitle">My Pets</p>
+              <h2>{petForm.id ? "Edit Pet" : "Add New Pet"}</h2>
+            </div>
+
+            <button className="modal-close-btn" onClick={closePetModal}>
+              ×
+            </button>
+          </div>
+
+          <form onSubmit={handlePetSubmit} className="admin-form">
+            <label>
+              Pet Type
+              <select
+                value={petForm.type}
+                onChange={(event) =>
+                  setPetForm({ ...petForm, type: event.target.value })
+                }
+              >
+                <option value="">Select pet type</option>
+                {petTypes.map((petType) => (
+                  <option key={petType.id} value={petType.name}>
+                    {petType.emoji} {petType.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Pet Name
+              <input
+                type="text"
+                placeholder="e.g. Milo, Luna"
+                value={petForm.name}
+                onChange={(event) =>
+                  setPetForm({ ...petForm, name: event.target.value })
+                }
+              />
+            </label>
+
+            <label>
+              Breed <span style={{ color: "#6f7c73", fontWeight: 400 }}>(optional)</span>
+              <input
+                type="text"
+                placeholder="e.g. Golden Retriever, Persian"
+                value={petForm.breed}
+                onChange={(event) =>
+                  setPetForm({ ...petForm, breed: event.target.value })
+                }
+              />
+            </label>
+
+            <div className="form-actions">
+              <button type="submit" className="primary-btn">
+                {petForm.id ? "Save Changes" : "+ Add Pet"}
+              </button>
+
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={closePetModal}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-page">
       {renderEditModal()}
       {renderPasswordModal()}
+      {renderPetModal()}
 
       <div className="page-title-row">
         <div className="page-title-area">
@@ -313,14 +502,6 @@ function Profile() {
           </div>
 
           <p className="profile-bio">{profile.bio}</p>
-
-          <div className="profile-pets-row">
-            {profile.pets.map((pet) => (
-              <span key={pet.id} className="profile-pet-pill">
-                {pet.emoji} {pet.name} · {pet.type}
-              </span>
-            ))}
-          </div>
 
           <div className="profile-action-row" style={{ marginTop: "22px" }}>
             <button className="primary-btn" onClick={openEditModal}>
@@ -367,6 +548,63 @@ function Profile() {
               <strong>{profile.lastLogin}</strong>
             </div>
           </div>
+        </section>
+
+        <section className="profile-pets-card">
+          <div className="table-header-row">
+            <div>
+              <h2>My Pets</h2>
+              <p className="form-note">
+                Add the pets you care for so guides and quizzes can be tailored
+                to them.
+              </p>
+            </div>
+
+            <button className="primary-btn" onClick={openAddPetModal}>
+              + Add Pet
+            </button>
+          </div>
+
+          {profile.pets.length > 0 ? (
+            <div className="my-pets-grid">
+              {profile.pets.map((pet) => (
+                <article key={pet.id} className="my-pet-card">
+                  <div className="my-pet-emoji">{pet.emoji}</div>
+
+                  <div className="my-pet-info">
+                    <h3>{pet.name}</h3>
+                    <p className="my-pet-type">{pet.type}</p>
+                    {pet.breed && (
+                      <p className="my-pet-breed">Breed: {pet.breed}</p>
+                    )}
+                  </div>
+
+                  <div className="my-pet-actions">
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={() => openEditPetModal(pet)}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      className="secondary-btn danger-outline"
+                      onClick={() => removePet(pet)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="petowner-empty-state">
+              <span className="empty-icon">🐾</span>
+              <p>You have not added any pets yet. Click "+ Add Pet" to start.</p>
+            </div>
+          )}
         </section>
 
         <section className="profile-security-card">
