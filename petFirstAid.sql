@@ -1,0 +1,175 @@
+-- Pet First-Aid Information System — MySQL Schema
+-- Based on SWE30003 Assignment 2 OO Design (Group 20)
+ 
+-- Drop tables in reverse dependency order (for clean re-runs)
+-- DROP TABLE IF EXISTS feedback;
+-- DROP TABLE IF EXISTS bookmarks;
+-- DROP TABLE IF EXISTS quiz_results;
+-- DROP TABLE IF EXISTS answers;
+-- DROP TABLE IF EXISTS questions;
+-- DROP TABLE IF EXISTS quizzes;
+-- DROP TABLE IF EXISTS veterinary_advice;
+-- DROP TABLE IF EXISTS media;
+-- DROP TABLE IF EXISTS first_aid_guides;
+-- DROP TABLE IF EXISTS emergency_cases;
+-- DROP TABLE IF EXISTS user_pets;
+-- DROP TABLE IF EXISTS pets;
+-- DROP TABLE IF EXISTS users;
+
+-- USERS (base class for PetOwner and Admin)
+-- CREATE TABLE users (
+--   userID         INT AUTO_INCREMENT PRIMARY KEY,
+--   name        	VARCHAR(100)        NOT NULL,
+--   email       	VARCHAR(150)        NOT NULL UNIQUE,
+--   phone_no 		VARCHAR(20)			NOT NULL, 
+--   password    	VARCHAR(255)        NOT NULL,        -- store bcrypt hash
+--   role        	ENUM('pet_owner', 'admin') NOT NULL DEFAULT 'pet_owner',
+--   status     	ENUM('Active', 'Inactive') DEFAULT 'active',
+--   bio         	TEXT,                                -- "Cat and dog parent. Loves learning..."
+--   last_login  	TIMESTAMP 			NULL,
+--   created_at  	TIMESTAMP           DEFAULT CURRENT_TIMESTAMP
+-- );
+
+-- PETS (generic pet categories)
+-- CREATE TABLE pets (
+--   petID       INT AUTO_INCREMENT PRIMARY KEY,
+--   petName     VARCHAR(100)  NOT NULL,              -- "Dog", "Cat", "Rabbit", "Bird"
+--   icon        VARCHAR(10),                        
+--   petDesc	  TEXT,
+--   status      ENUM('Active', 'Disabled', 'Archived') DEFAULT 'active',
+--   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
+
+-- USER PETS (actual pets owned by a user)
+-- CREATE TABLE user_pets (
+--   userPetID   	INT AUTO_INCREMENT PRIMARY KEY,
+--   userID      	INT          NOT NULL,
+--   petID       	INT          NOT NULL,
+--   userPetName 	VARCHAR(100) NOT NULL,               -- "Milo", "Luna"
+--   breed       	VARCHAR(100),                        -- optional, free text
+--   created_at  	TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--   FOREIGN KEY (userID) REFERENCES users(userID) ON DELETE CASCADE,
+--   FOREIGN KEY (petID)  REFERENCES pets(petID)   ON DELETE CASCADE
+-- );
+ 
+-- EMERGENCY CASES 
+-- CREATE TABLE emergency_cases (
+--   emergencyID   INT AUTO_INCREMENT PRIMARY KEY,
+--   petID         INT          NOT NULL,
+--   topicTitle    VARCHAR(200) NOT NULL,             -- "Choking & Airway Blockage"
+--   topicDesc   	TEXT         NOT NULL,
+--   severity      ENUM('Critical', 'Moderate', 'Mild') NOT NULL,
+--   keywords      TEXT,                              -- comma-separated for search
+--   status        ENUM('Draft', 'Published', 'Archived') DEFAULT 'Draft',
+--   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--   FOREIGN KEY (petID) REFERENCES pets(petID) ON DELETE CASCADE
+-- );
+
+-- FIRST AID GUIDES (one per emergency case)
+-- CREATE TABLE first_aid_guides (
+--   guideID       INT AUTO_INCREMENT PRIMARY KEY,
+--   emergencyID   INT          NOT NULL UNIQUE,      -- 1-to-1
+--   guideTitle    VARCHAR(200) NOT NULL,
+--   overview      TEXT,                              -- summary/intro
+--   steps         TEXT         NOT NULL,             -- JSON array of step strings
+--   status        ENUM('Draft', 'Published', 'Archived') DEFAULT 'Draft',
+--   updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+--   FOREIGN KEY (emergencyID) REFERENCES emergency_cases(emergencyID) ON DELETE CASCADE
+-- );
+ 
+-- MEDIA (images and videos linked to a first aid guide)
+-- CREATE TABLE media (
+--   mediaID          INT AUTO_INCREMENT PRIMARY KEY,
+--   guideID          INT          NOT NULL,
+--   media_type       ENUM('image', 'video') NOT NULL,
+--   mediaTitle       VARCHAR(200),                   -- "Choking first-aid demonstration"
+--   caption          VARCHAR(300),
+--   mediaURL         VARCHAR(500) NOT NULL,
+--   duration_seconds INT NULL,                       -- for videos only
+--   mediaStatus      ENUM('Draft', 'Published', 'Archived') DEFAULT 'Draft',
+--   created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--   FOREIGN KEY (guideID) REFERENCES first_aid_guides(guideID) ON DELETE CASCADE
+-- );
+
+-- VETERINARY ADVICE (linked to a first aid guide)
+-- CREATE TABLE veterinary_advice (
+--   adviceID     INT AUTO_INCREMENT PRIMARY KEY,
+--   guideID      INT  NOT NULL,
+--   advice_text  TEXT NOT NULL,
+--   urgency      ENUM('General', 'Urgent', 'Emergency') DEFAULT 'General',
+--   adviceStatus ENUM('Draft', 'Published', 'Archived') DEFAULT 'Draft',
+--   created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--   FOREIGN KEY (guideID) REFERENCES first_aid_guides(guideID) ON DELETE CASCADE
+-- );
+ 
+-- QUIZZES (linked to an emergency case)
+-- CREATE TABLE quizzes (
+--   quizID      INT AUTO_INCREMENT PRIMARY KEY,
+--   guideID     INT          NOT NULL,
+--   quizTitle   VARCHAR(200) NOT NULL,               -- "Dog & Cat Choking Quiz"
+--   description TEXT,
+--   pass_mark   INT          NOT NULL DEFAULT 70,    -- passing score %
+--   quizStatus      ENUM('draft', 'published', 'archived') DEFAULT 'draft',
+--   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--   FOREIGN KEY (guideID) REFERENCES first_aid_guides(guideID) ON DELETE CASCADE
+-- );
+ 
+-- QUESTIONS (belong to a quiz)
+-- CREATE TABLE questions (
+--   questionID  INT AUTO_INCREMENT PRIMARY KEY,
+--   quizID      INT  NOT NULL,
+--   text        TEXT NOT NULL,
+--   order_num   INT  DEFAULT 0,
+--   FOREIGN KEY (quizID) REFERENCES quizzes(quizID) ON DELETE CASCADE
+-- );
+ 
+-- ANSWERS (belong to a question)
+-- CREATE TABLE answers (
+--   answerID    INT AUTO_INCREMENT PRIMARY KEY,
+--   questionID  INT     NOT NULL,
+--   text        TEXT    NOT NULL,
+--   is_correct  BOOLEAN NOT NULL DEFAULT FALSE,
+--   FOREIGN KEY (questionID) REFERENCES questions(questionID) ON DELETE CASCADE
+-- );
+
+-- QUIZ RESULTS (user's attempt at a quiz)
+-- CREATE TABLE quiz_results (
+--   resultID        INT AUTO_INCREMENT PRIMARY KEY,
+--   userID          INT NOT NULL,
+--   quizID          INT NOT NULL,
+--   score           INT NOT NULL,                    -- e.g. 90
+--   total_questions INT NOT NULL,
+--   passed          BOOLEAN NOT NULL DEFAULT FALSE,
+--   answers_json    TEXT,                            -- { question_id: answer_id }
+--   attempted_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--   FOREIGN KEY (userID) REFERENCES users(userID) ON DELETE CASCADE,
+--   FOREIGN KEY (quizID) REFERENCES quizzes(quizID) ON DELETE CASCADE
+-- );
+
+-- BOOKMARKS (user saves an emergency case)
+-- CREATE TABLE bookmarks (
+--   bookmarkID    INT AUTO_INCREMENT PRIMARY KEY,
+--   userID        INT NOT NULL,
+--   emergencyID   INT NOT NULL,
+--   saved_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--   UNIQUE KEY unique_bookmark (userID, emergencyID),
+--   FOREIGN KEY (userID)      REFERENCES users(userID)                ON DELETE CASCADE,
+--   FOREIGN KEY (emergencyID) REFERENCES emergency_cases(emergencyID) ON DELETE CASCADE
+-- );
+
+-- FEEDBACK (pet owner submits feedback)
+-- CREATE TABLE feedback (
+--   feedbackID    INT AUTO_INCREMENT PRIMARY KEY,
+--   userID        INT     NOT NULL,
+--   emergencyID   INT     NOT NULL,                  -- Topic/Guide dropdown
+--   rating        INT     CHECK (rating BETWEEN 1 AND 5),
+--   message       TEXT    NOT NULL,
+--   status        ENUM('new', 'reviewed') DEFAULT 'new',
+--   submitted_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--   FOREIGN KEY (userID)      REFERENCES users(userID)                ON DELETE CASCADE,
+--   FOREIGN KEY (emergencyID) REFERENCES emergency_cases(emergencyID) ON DELETE CASCADE
+-- );
+
+-- SEED: Default admin account (password: Admin@1234)
+-- INSERT INTO users (name, email, phone_no, password, role)
+-- VALUES ('Admin', 'admin@petfirstaid.com', '0123456789', '$2a$10$BMKY3/mwmntDs3ikKiDbw.FJfzBXg/BNL7DmfcZhZKxHqKdn4uUqa', 'admin');
