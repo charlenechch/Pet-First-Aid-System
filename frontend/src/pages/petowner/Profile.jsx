@@ -2,6 +2,7 @@ import { useState } from "react";
 import { petOwnerProfile as initialProfile } from "../../data/petOwnerData";
 import "../../styles/admin.css";
 import "../../styles/petOwner.css";
+import "../../styles/adminProfile.css";
 
 function Profile() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -275,7 +276,7 @@ function Profile() {
   }
 
   return (
-    <div className="admin-page">
+    <div className="admin-page shared-profile-page pet-owner-profile-page">
       {renderEditModal()}
       {renderPasswordModal()}
 
@@ -322,7 +323,7 @@ function Profile() {
             ))}
           </div>
 
-          <div className="profile-action-row" style={{ marginTop: "22px" }}>
+          <div className="profile-action-row">
             <button className="primary-btn" onClick={openEditModal}>
               Edit Profile
             </button>
@@ -372,24 +373,10 @@ function Profile() {
         <section className="profile-security-card">
           <h2>Security</h2>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "16px 18px",
-              border: "1px solid #e5e2dc",
-              borderRadius: "14px",
-              marginBottom: "12px",
-              gap: "12px",
-              flexWrap: "wrap",
-            }}
-          >
+          <div className="security-status-box">
             <div>
               <strong>Password</strong>
-              <p style={{ margin: "4px 0 0", color: "#6f7c73" }}>
-                Update your password regularly to keep your account safe.
-              </p>
+              <p>Update your password regularly to keep your account safe.</p>
             </div>
 
             <button className="secondary-btn" onClick={openPasswordModal}>
@@ -397,23 +384,10 @@ function Profile() {
             </button>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "16px 18px",
-              border: "1px solid #e5e2dc",
-              borderRadius: "14px",
-              gap: "12px",
-              flexWrap: "wrap",
-            }}
-          >
+          <div className="security-status-box">
             <div>
               <strong>Account Status</strong>
-              <p style={{ margin: "4px 0 0", color: "#6f7c73" }}>
-                Your pet owner account is currently active.
-              </p>
+              <p>Your pet owner account is currently active.</p>
             </div>
 
             <span className="status-badge">{profile.status}</span>

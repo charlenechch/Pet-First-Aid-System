@@ -69,7 +69,8 @@ function ManageGuideContent() {
       topicId: 102,
       petIds: [1],
       title: "Dog Heatstroke & Overheating",
-      overview: "Guide for cooling down overheated dogs and identifying emergency signs.",
+      overview:
+        "Guide for cooling down overheated dogs and identifying emergency signs.",
       severity: "Moderate",
       status: "Published",
     },
@@ -78,7 +79,8 @@ function ManageGuideContent() {
       topicId: 102,
       petIds: [3],
       title: "Rabbit Heatstroke Care",
-      overview: "Guide for helping rabbits during overheating or heatstroke situations.",
+      overview:
+        "Guide for helping rabbits during overheating or heatstroke situations.",
       severity: "Critical",
       status: "Draft",
     },
@@ -335,8 +337,13 @@ function ManageGuideContent() {
       (media) => media.guideId === guideId && media.status !== "Archived"
     );
 
-    const imageCount = activeMedia.filter((media) => media.type === "Image").length;
-    const videoCount = activeMedia.filter((media) => media.type === "Video").length;
+    const imageCount = activeMedia.filter(
+      (media) => media.type === "Image"
+    ).length;
+
+    const videoCount = activeMedia.filter(
+      (media) => media.type === "Video"
+    ).length;
 
     if (imageCount === 0 && videoCount === 0) return "No media";
 
@@ -493,7 +500,9 @@ function ManageGuideContent() {
     }
 
     if (guideForm.status === "Published" && !guideForm.id) {
-      alert("New guides should be saved as Draft first. Add steps before publishing.");
+      alert(
+        "New guides should be saved as Draft first. Add steps before publishing."
+      );
       return;
     }
 
@@ -752,7 +761,7 @@ function ManageGuideContent() {
 
     setTimeout(() => {
       document
-        .querySelector(".step-form")
+        .querySelector(".mgc-step-form")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50);
   }
@@ -968,21 +977,21 @@ function ManageGuideContent() {
               </select>
             </label>
 
-            <div className="admin-form-group">
-              <p className="admin-form-label">Pet Type for This Guide</p>
+            <div className="manage-guide-form-group">
+              <p className="manage-guide-form-label">Pet Type for This Guide</p>
 
               {!guideForm.topicId ? (
-                <p className="selected-note">
+                <p className="manage-guide-selected-note">
                   Please select an emergency topic first.
                 </p>
               ) : petsForTopic.length === 0 ? (
-                <p className="selected-note">
+                <p className="manage-guide-selected-note">
                   No active pet types are linked to this emergency topic.
                 </p>
               ) : (
-                <div className="checkbox-grid">
+                <div className="manage-guide-checkbox-grid">
                   {petsForTopic.map((pet) => (
-                    <label key={pet.id} className="checkbox-card">
+                    <label key={pet.id} className="manage-guide-checkbox-card">
                       <input
                         type="checkbox"
                         checked={guideForm.petIds.includes(pet.id)}
@@ -998,7 +1007,7 @@ function ManageGuideContent() {
               )}
 
               {guideForm.petIds.length > 0 && (
-                <p className="selected-note">
+                <p className="manage-guide-selected-note">
                   Selected:{" "}
                   {pets
                     .filter((pet) => guideForm.petIds.includes(pet.id))
@@ -1086,7 +1095,7 @@ function ManageGuideContent() {
     return (
       <div className="modal-backdrop" onClick={closeModal}>
         <section
-          className="admin-modal large-modal"
+          className="admin-modal mgc-large-modal"
           onClick={(event) => event.stopPropagation()}
         >
           <div className="modal-header">
@@ -1100,35 +1109,35 @@ function ManageGuideContent() {
             </button>
           </div>
 
-          <div className="guide-step-list">
+          <div className="mgc-step-list">
             {selectedSteps.length > 0 ? (
               selectedSteps.map((step) => (
                 <div
                   key={step.id}
-                  className={`guide-step-item ${
-                    step.status === "Archived" ? "archived-step" : ""
+                  className={`mgc-step-card ${
+                    step.status === "Archived" ? "mgc-step-card-archived" : ""
                   }`}
                 >
-                  <div>
-                    <strong>Step {step.stepNumber}</strong>
-                    <p>{step.instruction}</p>
-                    <span
-                      className={
-                        step.status === "Published"
-                          ? "status-badge"
-                          : step.status === "Draft"
-                          ? "status-badge draft"
-                          : "status-badge archived"
-                      }
-                    >
-                      {step.status}
-                    </span>
+                  <div className="mgc-step-info">
+                    <div className="mgc-step-top">
+                      <strong className="mgc-step-title">
+                        Step {step.stepNumber}
+                      </strong>
+
+                      <span
+                        className={`mgc-step-pill mgc-step-pill-${step.status.toLowerCase()}`}
+                      >
+                        {step.status}
+                      </span>
+                    </div>
+
+                    <p className="mgc-step-text">{step.instruction}</p>
                   </div>
 
-                  <div className="step-actions">
+                  <div className="mgc-step-buttons">
                     <button
                       type="button"
-                      className="secondary-btn"
+                      className="mgc-step-btn"
                       onClick={() => editStep(step)}
                     >
                       Edit
@@ -1137,7 +1146,7 @@ function ManageGuideContent() {
                     {step.status === "Archived" ? (
                       <button
                         type="button"
-                        className="secondary-btn"
+                        className="mgc-step-btn"
                         onClick={() => publishStep(step.id)}
                       >
                         Publish
@@ -1145,7 +1154,7 @@ function ManageGuideContent() {
                     ) : (
                       <button
                         type="button"
-                        className="secondary-btn danger-outline"
+                        className="mgc-step-btn mgc-step-btn-archive"
                         onClick={() => archiveStep(step.id)}
                       >
                         Archive
@@ -1159,7 +1168,7 @@ function ManageGuideContent() {
             )}
           </div>
 
-          <form onSubmit={handleStepSubmit} className="admin-form step-form">
+          <form onSubmit={handleStepSubmit} className="admin-form mgc-step-form">
             <h3>{stepForm.id ? "Edit Step" : "Add New Step"}</h3>
 
             <label>
@@ -1431,7 +1440,7 @@ function ManageGuideContent() {
   }
 
   return (
-    <div className="admin-page">
+    <div className="admin-page manage-guide-page">
       {renderFloatingActionMenu()}
       {renderGuideModal()}
       {renderStepsModal()}
@@ -1621,7 +1630,8 @@ function ManageGuideContent() {
             <div>
               <h2>Multimedia List</h2>
               <p className="form-note">
-                Manage images and videos that support pet-specific first-aid guides.
+                Manage images and videos that support pet-specific first-aid
+                guides.
               </p>
             </div>
 

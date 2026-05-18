@@ -1,23 +1,29 @@
-.admin-form-group {
+/* Manage Guide Content page only.
+   This file is scoped with .manage-guide-page or unique mgc- class names
+   so it will not affect Admin Profile or other admin pages. */
+
+/* Form groups */
+
+.manage-guide-page .manage-guide-form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.admin-form-label {
+.manage-guide-page .manage-guide-form-label {
   margin: 0;
   color: var(--admin-green-dark);
   font-size: 14px;
   font-weight: 600;
 }
 
-.checkbox-grid {
+.manage-guide-page .manage-guide-checkbox-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.checkbox-card {
+.manage-guide-page .manage-guide-checkbox-card {
   display: grid !important;
   grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
@@ -32,12 +38,12 @@
   overflow: hidden;
 }
 
-.checkbox-card:hover {
+.manage-guide-page .manage-guide-checkbox-card:hover {
   background: var(--admin-row-hover);
   border-color: var(--admin-green);
 }
 
-.checkbox-card input[type="checkbox"] {
+.manage-guide-page .manage-guide-checkbox-card input[type="checkbox"] {
   width: 16px !important;
   height: 16px !important;
   min-width: 16px;
@@ -47,7 +53,7 @@
   cursor: pointer;
 }
 
-.checkbox-card span {
+.manage-guide-page .manage-guide-checkbox-card span {
   display: block;
   min-width: 0;
   max-width: 100%;
@@ -59,7 +65,7 @@
   line-height: 1.4;
 }
 
-.selected-note {
+.manage-guide-page .manage-guide-selected-note {
   margin: 4px 0 0;
   color: var(--admin-muted);
   font-size: 13px;
@@ -69,241 +75,348 @@
 
 /* Filters */
 
-.guide-filter-row {
+.manage-guide-page .guide-filter-row {
   grid-template-columns: minmax(0, 1fr) minmax(180px, 240px) minmax(150px, 190px);
 }
 
 /* Guide table */
 
-.guide-table {
+.manage-guide-page .guide-table {
   min-width: 1220px;
 }
 
-.guide-table th:nth-child(1),
-.guide-table td:nth-child(1) {
+.manage-guide-page .guide-table th:nth-child(1),
+.manage-guide-page .guide-table td:nth-child(1) {
   width: 24%;
 }
 
-.guide-table th:nth-child(2),
-.guide-table td:nth-child(2) {
+.manage-guide-page .guide-table th:nth-child(2),
+.manage-guide-page .guide-table td:nth-child(2) {
   width: 13%;
 }
 
-.guide-table th:nth-child(3),
-.guide-table td:nth-child(3) {
+.manage-guide-page .guide-table th:nth-child(3),
+.manage-guide-page .guide-table td:nth-child(3) {
   width: 15%;
 }
 
-.guide-table th:nth-child(4),
-.guide-table td:nth-child(4) {
+.manage-guide-page .guide-table th:nth-child(4),
+.manage-guide-page .guide-table td:nth-child(4) {
   width: 7%;
   text-align: center;
 }
 
-.guide-table th:nth-child(5),
-.guide-table td:nth-child(5) {
+.manage-guide-page .guide-table th:nth-child(5),
+.manage-guide-page .guide-table td:nth-child(5) {
   width: 13%;
 }
 
-.guide-table th:nth-child(6),
-.guide-table td:nth-child(6) {
+.manage-guide-page .guide-table th:nth-child(6),
+.manage-guide-page .guide-table td:nth-child(6) {
   width: 10%;
   text-align: center;
 }
 
-.guide-table th:nth-child(7),
-.guide-table td:nth-child(7) {
+.manage-guide-page .guide-table th:nth-child(7),
+.manage-guide-page .guide-table td:nth-child(7) {
   width: 10%;
   text-align: center;
 }
 
-.guide-table th:nth-child(8),
-.guide-table td:nth-child(8) {
+.manage-guide-page .guide-table th:nth-child(8),
+.manage-guide-page .guide-table td:nth-child(8) {
   width: 8%;
   text-align: center;
 }
 
 /* Media table */
 
-.media-table {
+.manage-guide-page .media-table {
   min-width: 1080px;
 }
 
-.media-table th:nth-child(1),
-.media-table td:nth-child(1) {
+.manage-guide-page .media-table th:nth-child(1),
+.manage-guide-page .media-table td:nth-child(1) {
   width: 22%;
 }
 
-.media-table th:nth-child(2),
-.media-table td:nth-child(2) {
+.manage-guide-page .media-table th:nth-child(2),
+.manage-guide-page .media-table td:nth-child(2) {
   width: 20%;
 }
 
-.media-table th:nth-child(3),
-.media-table td:nth-child(3) {
+.manage-guide-page .media-table th:nth-child(3),
+.manage-guide-page .media-table td:nth-child(3) {
   width: 15%;
 }
 
-.media-table th:nth-child(4),
-.media-table td:nth-child(4) {
+.manage-guide-page .media-table th:nth-child(4),
+.manage-guide-page .media-table td:nth-child(4) {
   width: 9%;
   text-align: center;
 }
 
-.media-table th:nth-child(5),
-.media-table td:nth-child(5) {
+.manage-guide-page .media-table th:nth-child(5),
+.manage-guide-page .media-table td:nth-child(5) {
   width: 20%;
 }
 
-.media-table th:nth-child(6),
-.media-table td:nth-child(6) {
+.manage-guide-page .media-table th:nth-child(6),
+.manage-guide-page .media-table td:nth-child(6) {
   width: 8%;
   text-align: center;
 }
 
-.media-table th:nth-child(7),
-.media-table td:nth-child(7) {
+.manage-guide-page .media-table th:nth-child(7),
+.manage-guide-page .media-table td:nth-child(7) {
   width: 8%;
   text-align: center;
 }
 
 /* Advice table */
 
-.advice-table {
+.manage-guide-page .advice-table {
   min-width: 1040px;
 }
 
-.advice-table th:nth-child(1),
-.advice-table td:nth-child(1) {
+.manage-guide-page .advice-table th:nth-child(1),
+.manage-guide-page .advice-table td:nth-child(1) {
   width: 32%;
 }
 
-.advice-table th:nth-child(2),
-.advice-table td:nth-child(2) {
+.manage-guide-page .advice-table th:nth-child(2),
+.manage-guide-page .advice-table td:nth-child(2) {
   width: 22%;
 }
 
-.advice-table th:nth-child(3),
-.advice-table td:nth-child(3) {
+.manage-guide-page .advice-table th:nth-child(3),
+.manage-guide-page .advice-table td:nth-child(3) {
   width: 16%;
 }
 
-.advice-table th:nth-child(4),
-.advice-table td:nth-child(4) {
+.manage-guide-page .advice-table th:nth-child(4),
+.manage-guide-page .advice-table td:nth-child(4) {
   width: 10%;
   text-align: center;
 }
 
-.advice-table th:nth-child(5),
-.advice-table td:nth-child(5) {
+.manage-guide-page .advice-table th:nth-child(5),
+.manage-guide-page .advice-table td:nth-child(5) {
   width: 10%;
   text-align: center;
 }
 
-.advice-table th:nth-child(6),
-.advice-table td:nth-child(6) {
+.manage-guide-page .advice-table th:nth-child(6),
+.manage-guide-page .advice-table td:nth-child(6) {
   width: 10%;
   text-align: center;
 }
 
-/* Step modal */
+/* Steps modal */
 
-.large-modal {
-  width: min(900px, 100%);
+.manage-guide-page .mgc-large-modal {
+  width: min(1150px, calc(100vw - 80px)) !important;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
-.guide-step-list {
+.manage-guide-page .mgc-step-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   margin-bottom: 22px;
 }
 
-.guide-step-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 16px;
+.manage-guide-page .mgc-step-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  align-items: start;
+  gap: 22px;
+  width: 100%;
+  padding: 24px 28px;
   border: 1px solid var(--admin-border);
-  border-radius: 14px;
-  background: #ffffff;
+  border-left: 5px solid var(--admin-green);
+  border-radius: 16px;
+  background: #eef8f1;
 }
 
-.guide-step-item:hover {
-  background: var(--admin-row-hover);
+.manage-guide-page .mgc-step-card:hover {
+  background: #e9f5ed;
   border-color: var(--admin-green);
 }
 
-.guide-step-item p {
-  margin: 6px 0 10px;
-  color: var(--admin-muted);
-  line-height: 1.6;
-  overflow-wrap: anywhere;
+.manage-guide-page .mgc-step-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  text-align: left;
 }
 
-.archived-step {
+.manage-guide-page .mgc-step-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.manage-guide-page .mgc-step-title {
+  margin: 0;
+  padding: 0;
+  color: var(--admin-green-dark);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.manage-guide-page .mgc-step-title::before,
+.manage-guide-page .mgc-step-title::after {
+  display: none;
+  content: none;
+}
+
+.manage-guide-page .mgc-step-text {
+  margin: 0;
+  padding: 0;
+  color: var(--admin-muted);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.6;
+  text-align: left;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.manage-guide-page .mgc-step-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #dcefd8;
+  color: var(--admin-green-dark);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.manage-guide-page .mgc-step-pill-draft {
+  background: #fff7df;
+  color: #7a5a10;
+}
+
+.manage-guide-page .mgc-step-pill-archived {
+  background: #eeeeee;
+  color: #777777;
+}
+
+.manage-guide-page .mgc-step-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 190px;
+  min-width: 190px;
+}
+
+.manage-guide-page .mgc-step-btn {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-border);
+  background: #ffffff;
+  color: var(--admin-text);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.manage-guide-page .mgc-step-btn:hover {
+  background: var(--admin-green-hover);
+}
+
+.manage-guide-page .mgc-step-btn-archive {
+  color: #b6533f;
+  border-color: #f0c8bd;
+  background: #fffaf8;
+}
+
+.manage-guide-page .mgc-step-btn-archive:hover {
+  background: #fff1ee;
+}
+
+.manage-guide-page .mgc-step-card-archived {
   background: #f3f3f3;
   opacity: 0.75;
 }
 
-.step-actions {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.step-form {
+.manage-guide-page .mgc-step-form {
   border-top: 1px solid var(--admin-border);
   padding-top: 20px;
 }
 
-.step-form h3 {
+.manage-guide-page .mgc-step-form h3 {
   margin: 0;
   font-size: 18px;
   color: var(--admin-green-dark);
 }
 
-.danger-outline {
-  color: #b6533f;
-}
-
-.danger-outline:hover {
-  background: #fff1ee;
-}
-
 /* Responsive */
 
 @media (max-width: 1100px) {
-  .guide-filter-row {
+  .manage-guide-page .guide-filter-row {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 900px) {
-  .guide-table {
+  .manage-guide-page .guide-table {
     min-width: 1180px;
   }
 
-  .media-table {
+  .manage-guide-page .media-table {
     min-width: 1040px;
   }
 
-  .advice-table {
+  .manage-guide-page .advice-table {
     min-width: 1000px;
   }
 }
 
 @media (max-width: 768px) {
-  .guide-step-item {
-    flex-direction: column;
+  .manage-guide-page .mgc-large-modal {
+    width: calc(100vw - 28px) !important;
   }
 
-  .step-actions {
+  .manage-guide-page .mgc-step-card {
+    grid-template-columns: 1fr;
+  }
+
+  .manage-guide-page .mgc-step-buttons {
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
     flex-wrap: wrap;
   }
 
-  .checkbox-grid {
+  .manage-guide-page .mgc-step-btn {
+    width: auto;
+    min-width: 100px;
+  }
+
+  .manage-guide-page .manage-guide-checkbox-grid {
     grid-template-columns: 1fr;
   }
 }

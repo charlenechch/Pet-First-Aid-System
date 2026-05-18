@@ -21,7 +21,6 @@ function AdminProfile() {
   });
 
   const [profileForm, setProfileForm] = useState(adminProfile);
-
   const [avatarPreview, setAvatarPreview] = useState("");
   const [avatarFileName, setAvatarFileName] = useState("");
 
@@ -470,7 +469,7 @@ function AdminProfile() {
   }
 
   return (
-    <div className="admin-page">
+    <div className="admin-page shared-profile-page admin-profile-page">
       {renderEditModal()}
       {renderAvatarModal()}
       {renderPasswordModal()}
