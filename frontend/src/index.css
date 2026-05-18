@@ -196,6 +196,132 @@ a {
   }
 }
 
+/* ===== AUTH MESSAGE DESIGN ===== */
+
+.auth-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 15px;
+  border-radius: 16px;
+  margin-bottom: 18px;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.5;
+  animation: authMessageSlide 0.25s ease both;
+}
+
+.auth-alert-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.auth-alert-text {
+  flex: 1;
+}
+
+.auth-alert-text strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.auth-alert.error {
+  background: #fff0f0;
+  border: 1.5px solid #f5b8b8;
+  color: #a32d2d;
+  box-shadow: 0 8px 20px rgba(227, 57, 70, 0.08);
+}
+
+.auth-alert.error .auth-alert-icon {
+  background: #e63946;
+  color: white;
+}
+
+.auth-alert.success {
+  background: #edf8ee;
+  border: 1.5px solid #b7dfc3;
+  color: #2d6a4f;
+  box-shadow: 0 8px 20px rgba(45, 106, 79, 0.08);
+}
+
+.auth-alert.success .auth-alert-icon {
+  background: #2d6a4f;
+  color: white;
+}
+
+.auth-alert.info {
+  background: #fff7ec;
+  border: 1.5px solid #f6d3a9;
+  color: #9a5b1f;
+  box-shadow: 0 8px 20px rgba(201, 132, 84, 0.08);
+}
+
+.auth-alert.info .auth-alert-icon {
+  background: #c98454;
+  color: white;
+}
+
+/* Disabled loading button */
+.login-btn:disabled,
+.register-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.login-btn:disabled:hover,
+.register-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Small loading dot animation */
+.auth-loading-dots::after {
+  content: "";
+  animation: loadingDots 1.2s infinite;
+}
+
+@keyframes loadingDots {
+  0% {
+    content: "";
+  }
+  33% {
+    content: ".";
+  }
+  66% {
+    content: "..";
+  }
+  100% {
+    content: "...";
+  }
+}
+
+@keyframes authMessageSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Register password strength spacing */
+.register-strength {
+  margin-top: -4px;
+  margin-bottom: 18px;
+}
 /* ===== FOOTER ===== */
 
 .pg-footer {
