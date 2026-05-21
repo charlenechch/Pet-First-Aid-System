@@ -1,3 +1,11 @@
+// Master pet types (matches PETS table in DB schema)
+export const petTypes = [
+  { id: 1, name: "Dog", emoji: "🐶" },
+  { id: 2, name: "Cat", emoji: "🐱" },
+  { id: 3, name: "Rabbit", emoji: "🐰" },
+  { id: 4, name: "Bird", emoji: "🐦" },
+];
+
 export const petOwnerProfile = {
   name: "Jane Smith",
   initials: "JS",
@@ -9,9 +17,22 @@ export const petOwnerProfile = {
   lastLogin: "Today, 8:42 AM",
   bio: "Cat and dog parent. Loves learning emergency first-aid for furry friends.",
   avatarUrl: "",
+  // Matches user_pets table: userPetID, petID (type), userPetName, breed
   pets: [
-    { id: 1, name: "Milo", type: "Dog", emoji: "🐶" },
-    { id: 2, name: "Luna", type: "Cat", emoji: "🐱" },
+    {
+      id: 1,
+      name: "Milo",
+      type: "Dog",
+      emoji: "🐶",
+      breed: "Golden Retriever",
+    },
+    {
+      id: 2,
+      name: "Luna",
+      type: "Cat",
+      emoji: "🐱",
+      breed: "Persian",
+    },
   ],
 };
 
@@ -28,21 +49,21 @@ export const recentTopics = [
     title: "Choking & Airway Blockage",
     pet: "Dog",
     petEmoji: "🐶",
-    severity: "Critical",
+    severity: "High",
   },
   {
     id: 102,
     title: "Dog Heatstroke & Overheating",
     pet: "Dog",
     petEmoji: "🐶",
-    severity: "Urgent",
+    severity: "Medium",
   },
   {
     id: 103,
     title: "Cat Poisoning Response",
     pet: "Cat",
     petEmoji: "🐱",
-    severity: "Critical",
+    severity: "High",
   },
 ];
 
@@ -52,7 +73,7 @@ export const bookmarkedTopics = [
     title: "Choking & Airway Blockage",
     pet: "Dog",
     petEmoji: "🐶",
-    severity: "Critical",
+    severity: "High",
     summary:
       "Recognise the signs of choking and learn the safe steps to clear your pet's airway.",
     savedAt: "Today",
@@ -62,7 +83,7 @@ export const bookmarkedTopics = [
     title: "Dog Heatstroke & Overheating",
     pet: "Dog",
     petEmoji: "🐶",
-    severity: "Urgent",
+    severity: "Medium",
     summary:
       "Heatstroke is a medical emergency. Learn how to cool down your dog safely.",
     savedAt: "Yesterday",
@@ -72,7 +93,7 @@ export const bookmarkedTopics = [
     title: "Cat Poisoning Response",
     pet: "Cat",
     petEmoji: "🐱",
-    severity: "Critical",
+    severity: "High",
     summary:
       "Know the common household poisons and the right steps to take before reaching the vet.",
     savedAt: "3 days ago",
@@ -82,7 +103,7 @@ export const bookmarkedTopics = [
     title: "Rabbit Heatstroke Care",
     pet: "Rabbit",
     petEmoji: "🐰",
-    severity: "Urgent",
+    severity: "Medium",
     summary:
       "Rabbits cannot sweat. Learn signs and immediate cooling measures.",
     savedAt: "1 week ago",
@@ -92,7 +113,7 @@ export const bookmarkedTopics = [
     title: "Bird Wound & Bleeding Care",
     pet: "Bird",
     petEmoji: "🐦",
-    severity: "Moderate",
+    severity: "Low",
     summary:
       "How to handle small wounds and bleeding for birds before veterinary care.",
     savedAt: "2 weeks ago",
@@ -102,7 +123,7 @@ export const bookmarkedTopics = [
     title: "Dog Seizure First Aid",
     pet: "Dog",
     petEmoji: "🐶",
-    severity: "Critical",
+    severity: "High",
     summary:
       "Stay calm and follow these steps if your dog has a sudden seizure.",
     savedAt: "3 weeks ago",

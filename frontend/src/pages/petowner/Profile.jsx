@@ -1,15 +1,41 @@
-import { useState } from "react";
-import { petOwnerProfile as initialProfile } from "../../data/petOwnerData";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { petTypes } from "../../data/petOwnerData";
 import "../../styles/admin.css";
 import "../../styles/petOwner.css";
-import "../../styles/adminProfile.css";
+
+const API_BASE_URL = "http://localhost:5000";
+
+const emptyProfile = {
+  userID: "",
+  name: "",
+  email: "",
+  phone: "",
+  role: "",
+  status: "",
+  bio: "",
+  joined: "-",
+  lastLogin: "-",
+  initials: "U",
+  avatarUrl: "",
+  pets: [],
+};
 
 function Profile() {
+  const navigate = useNavigate();
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isPetModalOpen, setIsPetModalOpen] = useState(false);
 
-  const [profile, setProfile] = useState(initialProfile);
-  const [profileForm, setProfileForm] = useState(initialProfile);
+  const [profile, setProfile] = useState(emptyProfile);
+
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    bio: "",
+  });
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -17,43 +43,255 @@ function Profile() {
     confirmPassword: "",
   });
 
+  const [petForm, setPetForm] = useState({
+    id: null,
+    type: "",
+    name: "",
+    breed: "",
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  const [error, setError] = useState("");
+  const [successToast, setSuccessToast] = useState("");
+
+  function getToken() {
+    return localStorage.getItem("token");
+  }
+
   function getInitials(name) {
+    if (!name) return "U";
+
     return name
       .split(" ")
+      .filter(Boolean)
       .map((word) => word[0])
       .join("")
       .slice(0, 2)
       .toUpperCase();
   }
 
+function formatDate(dateValue) {
+  if (!dateValue) return "-";
+
+  let date;
+
+  if (typeof dateValue === "string") {
+    // MySQL format: "2026-05-21 03:40:00"
+    if (dateValue.includes(" ") && !dateValue.includes("T")) {
+      date = new Date(dateValue.replace(" ", "T") + "Z");
+    }
+    // ISO format without timezone
+    else if (dateValue.includes("T") && !dateValue.endsWith("Z")) {
+      date = new Date(dateValue + "Z");
+    }
+    // ISO format with timezone
+    else {
+      date = new Date(dateValue);
+    }
+  } else {
+    date = new Date(dateValue);
+  }
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleString("en-MY", {
+    timeZone: "Asia/Kuala_Lumpur",
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+  function mapUserToProfile(user, oldPets = []) {
+    return {
+      userID: user.userID || "",
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone_no || "",
+      role: user.role === "pet_owner" ? "Pet Owner" : user.role || "User",
+      status: user.status || "Active",
+      bio: user.bio || "No bio added yet.",
+      joined: formatDate(user.created_at),
+      lastLogin: formatDate(user.last_login),
+      initials: getInitials(user.name),
+      avatarUrl: "",
+      pets: oldPets,
+    };
+  }
+
+  async function readJson(response) {
+    try {
+      return await response.json();
+    } catch {
+      return {};
+    }
+  }
+
+  function showSuccess(message) {
+    setSuccessToast(message);
+
+    window.setTimeout(() => {
+      setSuccessToast("");
+    }, 1800);
+  }
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProfile() {
+      try {
+        const token = getToken();
+
+        if (!token) {
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/profile/me`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await readJson(response);
+        console.log("BACKEND LAST LOGIN:", data.user.last_login);
+console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
+
+        if (!isMounted) return;
+
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        if (!response.ok) {
+          setError(data.message || "Failed to load profile.");
+          return;
+        }
+
+        setProfile((prev) => mapUserToProfile(data.user, prev.pets));
+        localStorage.setItem("user", JSON.stringify(data.user));
+      } catch (error) {
+        console.error("Load profile error:", error);
+
+        if (isMounted) {
+          setError("Cannot connect to server. Please make sure backend is running.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
+
+  function getPetEmoji(typeName) {
+    const match = petTypes.find((petType) => petType.name === typeName);
+    return match ? match.emoji : "🐾";
+  }
+
   function openEditModal() {
-    setProfileForm(profile);
+    setProfileForm({
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+      bio: profile.bio === "No bio added yet." ? "" : profile.bio,
+    });
+
+    setError("");
     setIsEditModalOpen(true);
   }
 
   function closeEditModal() {
     setIsEditModalOpen(false);
+    setError("");
   }
 
-  function handleProfileSubmit(event) {
+  async function handleProfileSubmit(event) {
     event.preventDefault();
+    setError("");
 
     if (!profileForm.name.trim()) {
-      alert("Please enter your name.");
+      setError("Please enter your name.");
       return;
     }
 
     if (!profileForm.email.trim()) {
-      alert("Please enter your email.");
+      setError("Please enter your email.");
       return;
     }
 
-    setProfile({
-      ...profileForm,
-      initials: getInitials(profileForm.name),
-    });
+    if (!profileForm.phone.trim()) {
+      setError("Please enter your phone number.");
+      return;
+    }
 
-    setIsEditModalOpen(false);
+    try {
+      setSavingProfile(true);
+
+      const token = getToken();
+
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/profile/me`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: profileForm.name.trim(),
+          email: profileForm.email.trim(),
+          phone_no: profileForm.phone.trim(),
+          bio: profileForm.bio.trim(),
+        }),
+      });
+
+      const data = await readJson(response);
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      if (!response.ok) {
+        setError(data.message || "Failed to update profile.");
+        return;
+      }
+
+      setProfile((prev) => mapUserToProfile(data.user, prev.pets));
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      setIsEditModalOpen(false);
+      showSuccess("Profile updated successfully.");
+    } catch (error) {
+      console.error("Update profile error:", error);
+      setError("Cannot connect to server. Please make sure backend is running.");
+    } finally {
+      setSavingProfile(false);
+    }
   }
 
   function openPasswordModal() {
@@ -63,38 +301,167 @@ function Profile() {
       confirmPassword: "",
     });
 
+    setError("");
     setIsPasswordModalOpen(true);
   }
 
   function closePasswordModal() {
     setIsPasswordModalOpen(false);
+    setError("");
   }
 
-  function handlePasswordSubmit(event) {
+  async function handlePasswordSubmit(event) {
     event.preventDefault();
+    setError("");
 
     if (!passwordForm.currentPassword.trim()) {
-      alert("Please enter current password.");
+      setError("Please enter current password.");
       return;
     }
 
     if (!passwordForm.newPassword.trim()) {
-      alert("Please enter new password.");
+      setError("Please enter new password.");
       return;
     }
 
-    if (passwordForm.newPassword.length < 8) {
-      alert("New password should be at least 8 characters.");
+    if (passwordForm.newPassword.length < 6) {
+      setError("New password must be at least 6 characters.");
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert("New password and confirmation do not match.");
+      setError("New password and confirmation do not match.");
       return;
     }
 
-    alert("Password changed successfully. This is hardcoded for now.");
-    setIsPasswordModalOpen(false);
+    try {
+      setSavingPassword(true);
+
+      const token = getToken();
+
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/profile/change-password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(passwordForm),
+      });
+
+      const data = await readJson(response);
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      if (!response.ok) {
+        setError(data.message || "Failed to change password.");
+        return;
+      }
+
+      setIsPasswordModalOpen(false);
+      showSuccess("Password changed successfully.");
+    } catch (error) {
+      console.error("Change password error:", error);
+      setError("Cannot connect to server. Please make sure backend is running.");
+    } finally {
+      setSavingPassword(false);
+    }
+  }
+
+  function openAddPetModal() {
+    setPetForm({ id: null, type: "", name: "", breed: "" });
+    setIsPetModalOpen(true);
+  }
+
+  function openEditPetModal(pet) {
+    setPetForm({
+      id: pet.id,
+      type: pet.type,
+      name: pet.name,
+      breed: pet.breed || "",
+    });
+
+    setIsPetModalOpen(true);
+  }
+
+  function closePetModal() {
+    setIsPetModalOpen(false);
+  }
+
+  function handlePetSubmit(event) {
+    event.preventDefault();
+
+    if (!petForm.type) {
+      alert("Please select a pet type.");
+      return;
+    }
+
+    if (!petForm.name.trim()) {
+      alert("Please enter your pet's name.");
+      return;
+    }
+
+    const emoji = getPetEmoji(petForm.type);
+
+    if (petForm.id) {
+      setProfile((prev) => ({
+        ...prev,
+        pets: prev.pets.map((pet) =>
+          pet.id === petForm.id
+            ? {
+                ...pet,
+                type: petForm.type,
+                name: petForm.name.trim(),
+                breed: petForm.breed.trim(),
+                emoji,
+              }
+            : pet
+        ),
+      }));
+
+      showSuccess("Pet updated successfully.");
+    } else {
+      const newPet = {
+        id: Date.now(),
+        type: petForm.type,
+        name: petForm.name.trim(),
+        breed: petForm.breed.trim(),
+        emoji,
+      };
+
+      setProfile((prev) => ({
+        ...prev,
+        pets: [...prev.pets, newPet],
+      }));
+
+      showSuccess("Pet added successfully.");
+    }
+
+    closePetModal();
+  }
+
+  function removePet(pet) {
+    const confirmRemove = window.confirm(
+      `Remove ${pet.name} (${pet.type}) from your pets?`
+    );
+
+    if (!confirmRemove) return;
+
+    setProfile((prev) => ({
+      ...prev,
+      pets: prev.pets.filter((item) => item.id !== pet.id),
+    }));
+
+    showSuccess("Pet removed successfully.");
   }
 
   function renderEditModal() {
@@ -112,10 +479,20 @@ function Profile() {
               <h2>Edit Profile</h2>
             </div>
 
-            <button className="modal-close-btn" onClick={closeEditModal}>
+            <button type="button" className="modal-close-btn" onClick={closeEditModal}>
               ×
             </button>
           </div>
+
+          {error && (
+            <div className="auth-alert error" style={{ marginBottom: "16px" }}>
+              <div className="auth-alert-icon">!</div>
+              <div className="auth-alert-text">
+                <strong>Update failed</strong>
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleProfileSubmit} className="admin-form">
             <label>
@@ -124,11 +501,12 @@ function Profile() {
                 type="text"
                 value={profileForm.name}
                 onChange={(event) =>
-                  setProfileForm({
-                    ...profileForm,
+                  setProfileForm((prev) => ({
+                    ...prev,
                     name: event.target.value,
-                  })
+                  }))
                 }
+                disabled={savingProfile}
               />
             </label>
 
@@ -138,11 +516,12 @@ function Profile() {
                 type="email"
                 value={profileForm.email}
                 onChange={(event) =>
-                  setProfileForm({
-                    ...profileForm,
+                  setProfileForm((prev) => ({
+                    ...prev,
                     email: event.target.value,
-                  })
+                  }))
                 }
+                disabled={savingProfile}
               />
             </label>
 
@@ -152,11 +531,12 @@ function Profile() {
                 type="text"
                 value={profileForm.phone}
                 onChange={(event) =>
-                  setProfileForm({
-                    ...profileForm,
+                  setProfileForm((prev) => ({
+                    ...prev,
                     phone: event.target.value,
-                  })
+                  }))
                 }
+                disabled={savingProfile}
               />
             </label>
 
@@ -166,23 +546,25 @@ function Profile() {
                 rows="4"
                 value={profileForm.bio}
                 onChange={(event) =>
-                  setProfileForm({
-                    ...profileForm,
+                  setProfileForm((prev) => ({
+                    ...prev,
                     bio: event.target.value,
-                  })
+                  }))
                 }
+                disabled={savingProfile}
               />
             </label>
 
             <div className="form-actions">
-              <button type="submit" className="primary-btn">
-                Save Changes
+              <button type="submit" className="primary-btn" disabled={savingProfile}>
+                {savingProfile ? "Saving..." : "Save Changes"}
               </button>
 
               <button
                 type="button"
                 className="secondary-btn"
                 onClick={closeEditModal}
+                disabled={savingProfile}
               >
                 Cancel
               </button>
@@ -208,10 +590,24 @@ function Profile() {
               <h2>Change Password</h2>
             </div>
 
-            <button className="modal-close-btn" onClick={closePasswordModal}>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={closePasswordModal}
+            >
               ×
             </button>
           </div>
+
+          {error && (
+            <div className="auth-alert error" style={{ marginBottom: "16px" }}>
+              <div className="auth-alert-icon">!</div>
+              <div className="auth-alert-text">
+                <strong>Password update failed</strong>
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handlePasswordSubmit} className="admin-form">
             <label>
@@ -220,11 +616,12 @@ function Profile() {
                 type="password"
                 value={passwordForm.currentPassword}
                 onChange={(event) =>
-                  setPasswordForm({
-                    ...passwordForm,
+                  setPasswordForm((prev) => ({
+                    ...prev,
                     currentPassword: event.target.value,
-                  })
+                  }))
                 }
+                disabled={savingPassword}
               />
             </label>
 
@@ -234,11 +631,12 @@ function Profile() {
                 type="password"
                 value={passwordForm.newPassword}
                 onChange={(event) =>
-                  setPasswordForm({
-                    ...passwordForm,
+                  setPasswordForm((prev) => ({
+                    ...prev,
                     newPassword: event.target.value,
-                  })
+                  }))
                 }
+                disabled={savingPassword}
               />
             </label>
 
@@ -248,23 +646,25 @@ function Profile() {
                 type="password"
                 value={passwordForm.confirmPassword}
                 onChange={(event) =>
-                  setPasswordForm({
-                    ...passwordForm,
+                  setPasswordForm((prev) => ({
+                    ...prev,
                     confirmPassword: event.target.value,
-                  })
+                  }))
                 }
+                disabled={savingPassword}
               />
             </label>
 
             <div className="form-actions">
-              <button type="submit" className="primary-btn">
-                Change Password
+              <button type="submit" className="primary-btn" disabled={savingPassword}>
+                {savingPassword ? "Changing..." : "Change Password"}
               </button>
 
               <button
                 type="button"
                 className="secondary-btn"
                 onClick={closePasswordModal}
+                disabled={savingPassword}
               >
                 Cancel
               </button>
@@ -275,10 +675,124 @@ function Profile() {
     );
   }
 
+  function renderPetModal() {
+    if (!isPetModalOpen) return null;
+
+    return (
+      <div className="modal-backdrop" onClick={closePetModal}>
+        <section
+          className="admin-modal profile-modal"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="modal-header">
+            <div>
+              <p className="page-subtitle">My Pets</p>
+              <h2>{petForm.id ? "Edit Pet" : "Add New Pet"}</h2>
+            </div>
+
+            <button type="button" className="modal-close-btn" onClick={closePetModal}>
+              ×
+            </button>
+          </div>
+
+          <form onSubmit={handlePetSubmit} className="admin-form">
+            <label>
+              Pet Type
+              <select
+                value={petForm.type}
+                onChange={(event) =>
+                  setPetForm((prev) => ({
+                    ...prev,
+                    type: event.target.value,
+                  }))
+                }
+              >
+                <option value="">Select pet type</option>
+                {petTypes.map((petType) => (
+                  <option key={petType.id} value={petType.name}>
+                    {petType.emoji} {petType.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Pet Name
+              <input
+                type="text"
+                placeholder="e.g. Milo, Luna"
+                value={petForm.name}
+                onChange={(event) =>
+                  setPetForm((prev) => ({
+                    ...prev,
+                    name: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label>
+              Breed{" "}
+              <span style={{ color: "#6f7c73", fontWeight: 400 }}>
+                (optional)
+              </span>
+              <input
+                type="text"
+                placeholder="e.g. Golden Retriever, Persian"
+                value={petForm.breed}
+                onChange={(event) =>
+                  setPetForm((prev) => ({
+                    ...prev,
+                    breed: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <div className="form-actions">
+              <button type="submit" className="primary-btn">
+                {petForm.id ? "Save Changes" : "+ Add Pet"}
+              </button>
+
+              <button type="button" className="secondary-btn" onClick={closePetModal}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="admin-page">
+        <section className="admin-table-card">
+          <h2>Loading Profile...</h2>
+          <p className="form-note">
+            Please wait while we load your account details.
+          </p>
+        </section>
+      </div>
+    );
+  }
+
   return (
-    <div className="admin-page shared-profile-page pet-owner-profile-page">
+    <div className="admin-page">
+      {successToast && (
+        <div className="profile-success-toast">
+          <div className="profile-success-toast-icon">✓</div>
+
+          <div>
+            <strong>{successToast}</strong>
+            <p>Your latest changes have been saved.</p>
+          </div>
+        </div>
+      )}
+
       {renderEditModal()}
       {renderPasswordModal()}
+      {renderPetModal()}
 
       <div className="page-title-row">
         <div className="page-title-area">
@@ -286,6 +800,14 @@ function Profile() {
           <h1>My Profile</h1>
         </div>
       </div>
+
+      {error && !isEditModalOpen && !isPasswordModalOpen && (
+        <section className="admin-table-card" style={{ marginBottom: "20px" }}>
+          <p className="form-note" style={{ color: "#b6533f", margin: 0 }}>
+            {error}
+          </p>
+        </section>
+      )}
 
       <div className="profile-layout">
         <section className="profile-card">
@@ -315,20 +837,16 @@ function Profile() {
 
           <p className="profile-bio">{profile.bio}</p>
 
-          <div className="profile-pets-row">
-            {profile.pets.map((pet) => (
-              <span key={pet.id} className="profile-pet-pill">
-                {pet.emoji} {pet.name} · {pet.type}
-              </span>
-            ))}
-          </div>
-
-          <div className="profile-action-row">
-            <button className="primary-btn" onClick={openEditModal}>
+          <div className="profile-action-row" style={{ marginTop: "22px" }}>
+            <button type="button" className="primary-btn" onClick={openEditModal}>
               Edit Profile
             </button>
 
-            <button className="secondary-btn" onClick={openPasswordModal}>
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={openPasswordModal}
+            >
               Change Password
             </button>
           </div>
@@ -370,24 +888,112 @@ function Profile() {
           </div>
         </section>
 
+        <section className="profile-pets-card">
+          <div className="table-header-row">
+            <div>
+              <h2>My Pets</h2>
+              <p className="form-note">
+                Add the pets you care for so guides and quizzes can be tailored
+                to them.
+              </p>
+            </div>
+
+           <button className="primary-btn add-pet-btn" onClick={openAddPetModal}>
+            + Add Pet
+          </button>
+          </div>
+
+          {profile.pets.length > 0 ? (
+            <div className="my-pets-grid">
+              {profile.pets.map((pet) => (
+                <article key={pet.id} className="my-pet-card">
+                  <div className="my-pet-emoji">{pet.emoji}</div>
+
+                  <div className="my-pet-info">
+                    <h3>{pet.name}</h3>
+                    <p className="my-pet-type">{pet.type}</p>
+                    {pet.breed && (
+                      <p className="my-pet-breed">Breed: {pet.breed}</p>
+                    )}
+                  </div>
+
+                  <div className="my-pet-actions">
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={() => openEditPetModal(pet)}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      className="secondary-btn danger-outline"
+                      onClick={() => removePet(pet)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="petowner-empty-state">
+              <span className="empty-icon">🐾</span>
+              <p>You have not added any pets yet. Click "+ Add Pet" to start.</p>
+            </div>
+          )}
+        </section>
+
         <section className="profile-security-card">
           <h2>Security</h2>
 
-          <div className="security-status-box">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "16px 18px",
+              border: "1px solid #e5e2dc",
+              borderRadius: "14px",
+              marginBottom: "12px",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
             <div>
               <strong>Password</strong>
-              <p>Update your password regularly to keep your account safe.</p>
+              <p style={{ margin: "4px 0 0", color: "#6f7c73" }}>
+                Update your password regularly to keep your account safe.
+              </p>
             </div>
 
-            <button className="secondary-btn" onClick={openPasswordModal}>
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={openPasswordModal}
+            >
               Update
             </button>
           </div>
 
-          <div className="security-status-box">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "16px 18px",
+              border: "1px solid #e5e2dc",
+              borderRadius: "14px",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
             <div>
               <strong>Account Status</strong>
-              <p>Your pet owner account is currently active.</p>
+              <p style={{ margin: "4px 0 0", color: "#6f7c73" }}>
+                Your pet owner account is currently active.
+              </p>
             </div>
 
             <span className="status-badge">{profile.status}</span>
