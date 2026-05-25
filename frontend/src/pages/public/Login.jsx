@@ -62,14 +62,17 @@ export default function Login() {
 
       // Redirect based on role
       setTimeout(() => {
-        if (data.user.role === "admin") {
-          navigate("/admin/dashboard");
-        } else if (data.user.role === "pet_owner") {
-          navigate("/petowner/dashboard");
-        } else {
-          navigate("/");
-        }
-      }, 900);
+  const role = data.user.role?.toLowerCase().replace(/\s+/g, "_");
+
+  if (role === "admin") {
+    navigate("/admin/dashboard");
+  } else if (role === "pet_owner") {
+    navigate("/petowner/dashboard");
+  } else {
+    setError("Unknown user role. Please check the database role value.");
+    navigate("/login");
+  }
+}, 900);
     } catch (error) {
       console.error("Login error:", error);
       setError("Cannot connect to server. Please make sure backend is running.");
