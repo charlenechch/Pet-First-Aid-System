@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const pool = require("./db");
+const adminRoutes = require("./routes/admin");
 
 const app = express();
 
@@ -410,7 +411,8 @@ app.put("/api/profile/change-password", verifyToken, async (req, res) => {
   }
 });
 
-
+// ADMIN ROUTES  
+app.use("/api/admin", adminRoutes);
 
 
 
