@@ -1,0 +1,615 @@
+// ============================================================
+// ADMIN ROUTES — Pet First-Aid Information System
+// ============================================================
+//
+// PLACEMENT: save this as  backend/routes/admin.js
+//
+// MOUNT IT in index.js by adding these two lines:
+//
+//   const adminRoutes = require("./routes/admin");
+//   app.use("/api/admin", adminRoutes);
+//
+// Mounted at "/api/admin", so every route below is relative —
+// e.g. router.get("/users") is reachable at GET /api/admin/users.
+//
+// Self-contained: pulls the pool from ../db and defines its own
+// auth guards, so it does NOT depend on anything inside index.js.
+// ============================================================
+
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const pool = require("../db");
+
+const router = express.Router();
+
+// ============================================================
+// AUTH GUARDS
+// ============================================================
+
+function verifyToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Access denied. No token provided." });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "default_secret");
+    req.user = decoded; // { userID, email, role }
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid or expired token." });
+  }
+}
+
+function verifyAdmin(req, res, next) {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ message: "Access denied. Admin privileges required." });
+  }
+  next();
+}
+
+// Apply both guards to EVERY route in this router in one line.
+router.use(verifyToken, verifyAdmin);
+
+// ============================================================
+// DASHBOARD SUMMARY  ->  GET /api/admin/dashboard
+// ============================================================
+// Powers the whole Admin Overview page in one request:
+// stat-card counts + recent registrations + recent feedback.
+
+// Helper: run a COUNT query, but return 0 if the table doesn't
+// exist yet instead of crashing the whole dashboard.
+async function safeCount(sql) {
+  try {
+    const [rows] = await pool.query(sql);
+    return rows[0].count;
+  } catch (error) {
+    console.error("Dashboard count skipped:", error.message);
+    return 0;
+  }
+}
+
+router.get("/dashboard", async (req, res) => {
+  try {
+    const stats = {
+      users:    await safeCount("SELECT COUNT(*) AS count FROM users WHERE role = 'pet_owner'"),
+      guides:   await safeCount("SELECT COUNT(*) AS count FROM first_aid_guides WHERE status = 'Published'"),
+      quizzes:  await safeCount("SELECT COUNT(*) AS count FROM quizzes WHERE quizStatus = 'published'"),
+      feedback: await safeCount("SELECT COUNT(*) AS count FROM feedback"),
+    };
+
+    // Recent registrations (users table definitely exists)
+    let recentRegistrations = [];
+    try {
+      const [rows] = await pool.query(
+        `SELECT name, status, created_at
+         FROM users
+         WHERE role = 'pet_owner'
+         ORDER BY created_at DESC
+         LIMIT 5`
+      );
+      recentRegistrations = rows;
+    } catch (error) {
+      console.error("Recent registrations skipped:", error.message);
+    }
+
+    // Recent feedback (table may not exist yet)
+    let recentFeedback = [];
+    try {
+      const [rows] = await pool.query(
+        `SELECT f.rating, f.message, u.name AS userName, f.submitted_at
+         FROM feedback f
+         JOIN users u ON f.userID = u.userID
+         ORDER BY f.submitted_at DESC
+         LIMIT 5`
+      );
+      recentFeedback = rows;
+    } catch (error) {
+      console.error("Recent feedback skipped:", error.message);
+    }
+
+    res.json({ message: "Dashboard loaded.", stats, recentRegistrations, recentFeedback });
+  } catch (error) {
+    console.error("Admin dashboard error:", error);
+    res.status(500).json({ message: "Server error loading dashboard.", error: error.message });
+  }
+});
+
+// ============================================================
+// USER MANAGEMENT
+// ============================================================
+
+// GET /api/admin/users  — list all users (never returns password)
+router.get("/users", async (req, res) => {
+  try {
+    const [users] = await pool.query(
+      `SELECT userID, name, email, phone_no, role, status, last_login, created_at
+       FROM users
+       ORDER BY created_at DESC`
+    );
+    res.json({ message: "Users loaded.", users });
+  } catch (error) {
+    console.error("Admin get users error:", error);
+    res.status(500).json({ message: "Server error loading users.", error: error.message });
+  }
+});
+
+// GET /api/admin/users/:id  — single user
+router.get("/users/:id", async (req, res) => {
+  try {
+    const [users] = await pool.query(
+      `SELECT userID, name, email, phone_no, role, status, bio, last_login, created_at
+       FROM users
+       WHERE userID = ?`,
+      [req.params.id]
+    );
+    if (users.length === 0) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    res.json({ message: "User loaded.", user: users[0] });
+  } catch (error) {
+    console.error("Admin get user error:", error);
+    res.status(500).json({ message: "Server error loading user.", error: error.message });
+  }
+});
+
+// PATCH /api/admin/users/:id/status  — enable / disable a user
+// Body: { "status": "Active" | "Inactive" }
+router.patch("/users/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (!["Active", "Inactive"].includes(status)) {
+      return res.status(400).json({ message: "Status must be 'Active' or 'Inactive'." });
+    }
+
+    // Stop an admin from disabling their own account by accident
+    if (Number(req.params.id) === req.user.userID && status === "Inactive") {
+      return res.status(400).json({ message: "You cannot deactivate your own account." });
+    }
+
+    const [result] = await pool.query(
+      "UPDATE users SET status = ? WHERE userID = ?",
+      [status, req.params.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.json({ message: `User ${status === "Active" ? "activated" : "deactivated"}.` });
+  } catch (error) {
+    console.error("Admin update user status error:", error);
+    res.status(500).json({ message: "Server error updating user.", error: error.message });
+  }
+});
+
+// ============================================================
+// PET CATEGORIES  (Dog, Cat, Rabbit, ...)
+// ============================================================
+
+router.get("/pets", async (req, res) => {
+  try {
+    const [pets] = await pool.query(
+      "SELECT petID, petName, icon, petDesc, status, created_at FROM pets ORDER BY created_at DESC"
+    );
+    res.json({ message: "Pets loaded.", pets });
+  } catch (error) {
+    console.error("Admin get pets error:", error);
+    res.status(500).json({ message: "Server error loading pets.", error: error.message });
+  }
+});
+
+router.post("/pets", async (req, res) => {
+  try {
+    const { petName, icon, petDesc, status } = req.body;
+    if (!petName) {
+      return res.status(400).json({ message: "Pet name is required." });
+    }
+    const [result] = await pool.query(
+      "INSERT INTO pets (petName, icon, petDesc, status) VALUES (?, ?, ?, ?)",
+      [petName, icon || null, petDesc || null, status || "Active"]
+    );
+    res.status(201).json({ message: "Pet created.", petID: result.insertId });
+  } catch (error) {
+    console.error("Admin create pet error:", error);
+    res.status(500).json({ message: "Server error creating pet.", error: error.message });
+  }
+});
+
+router.put("/pets/:id", async (req, res) => {
+  try {
+    const { petName, icon, petDesc, status } = req.body;
+    if (!petName) {
+      return res.status(400).json({ message: "Pet name is required." });
+    }
+    const [result] = await pool.query(
+      "UPDATE pets SET petName = ?, icon = ?, petDesc = ?, status = ? WHERE petID = ?",
+      [petName, icon || null, petDesc || null, status || "Active", req.params.id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Pet not found." });
+    }
+    res.json({ message: "Pet updated." });
+  } catch (error) {
+    console.error("Admin update pet error:", error);
+    res.status(500).json({ message: "Server error updating pet.", error: error.message });
+  }
+});
+
+router.delete("/pets/:id", async (req, res) => {
+  try {
+    const [result] = await pool.query("DELETE FROM pets WHERE petID = ?", [req.params.id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Pet not found." });
+    }
+    res.json({ message: "Pet deleted." });
+  } catch (error) {
+    console.error("Admin delete pet error:", error);
+    res.status(500).json({ message: "Server error deleting pet.", error: error.message });
+  }
+});
+
+// ============================================================
+// EMERGENCY CASES
+// ============================================================
+
+// GET /api/admin/emergency-cases  — joins petName for display.
+// Optional filters: ?status=Published  &  ?petID=2
+router.get("/emergency-cases", async (req, res) => {
+  try {
+    const { status, petID } = req.query;
+    const conditions = [];
+    const params = [];
+
+    if (status) { conditions.push("ec.status = ?"); params.push(status); }
+    if (petID)  { conditions.push("ec.petID = ?");  params.push(petID); }
+
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    const [cases] = await pool.query(
+      `SELECT ec.emergencyID, ec.petID, p.petName, ec.topicTitle, ec.topicDesc,
+              ec.severity, ec.keywords, ec.status, ec.created_at
+       FROM emergency_cases ec
+       JOIN pets p ON ec.petID = p.petID
+       ${where}
+       ORDER BY ec.created_at DESC`,
+      params
+    );
+    res.json({ message: "Emergency cases loaded.", cases });
+  } catch (error) {
+    console.error("Admin get emergency cases error:", error);
+    res.status(500).json({ message: "Server error loading emergency cases.", error: error.message });
+  }
+});
+
+router.get("/emergency-cases/:id", async (req, res) => {
+  try {
+    const [cases] = await pool.query(
+      `SELECT emergencyID, petID, topicTitle, topicDesc, severity, keywords, status, created_at
+       FROM emergency_cases WHERE emergencyID = ?`,
+      [req.params.id]
+    );
+    if (cases.length === 0) {
+      return res.status(404).json({ message: "Emergency case not found." });
+    }
+    res.json({ message: "Emergency case loaded.", case: cases[0] });
+  } catch (error) {
+    console.error("Admin get emergency case error:", error);
+    res.status(500).json({ message: "Server error loading emergency case.", error: error.message });
+  }
+});
+
+router.post("/emergency-cases", async (req, res) => {
+  try {
+    const { petID, topicTitle, topicDesc, severity, keywords, status } = req.body;
+
+    if (!petID || !topicTitle || !topicDesc || !severity) {
+      return res.status(400).json({ message: "petID, topicTitle, topicDesc and severity are required." });
+    }
+    if (!["Critical", "Moderate", "Mild"].includes(severity)) {
+      return res.status(400).json({ message: "Severity must be Critical, Moderate or Mild." });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO emergency_cases (petID, topicTitle, topicDesc, severity, keywords, status)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [petID, topicTitle, topicDesc, severity, keywords || null, status || "Draft"]
+    );
+    res.status(201).json({ message: "Emergency case created.", emergencyID: result.insertId });
+  } catch (error) {
+    console.error("Admin create emergency case error:", error);
+    res.status(500).json({ message: "Server error creating emergency case.", error: error.message });
+  }
+});
+
+router.put("/emergency-cases/:id", async (req, res) => {
+  try {
+    const { petID, topicTitle, topicDesc, severity, keywords, status } = req.body;
+
+    if (!petID || !topicTitle || !topicDesc || !severity) {
+      return res.status(400).json({ message: "petID, topicTitle, topicDesc and severity are required." });
+    }
+
+    const [result] = await pool.query(
+      `UPDATE emergency_cases
+       SET petID = ?, topicTitle = ?, topicDesc = ?, severity = ?, keywords = ?, status = ?
+       WHERE emergencyID = ?`,
+      [petID, topicTitle, topicDesc, severity, keywords || null, status || "Draft", req.params.id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Emergency case not found." });
+    }
+    res.json({ message: "Emergency case updated." });
+  } catch (error) {
+    console.error("Admin update emergency case error:", error);
+    res.status(500).json({ message: "Server error updating emergency case.", error: error.message });
+  }
+});
+
+router.delete("/emergency-cases/:id", async (req, res) => {
+  try {
+    const [result] = await pool.query(
+      "DELETE FROM emergency_cases WHERE emergencyID = ?",
+      [req.params.id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Emergency case not found." });
+    }
+    res.json({ message: "Emergency case deleted." });
+  } catch (error) {
+    console.error("Admin delete emergency case error:", error);
+    res.status(500).json({ message: "Server error deleting emergency case.", error: error.message });
+  }
+});
+
+// ============================================================
+// FIRST-AID GUIDES  (one guide per emergency case)
+// ============================================================
+// `steps` is stored as a JSON array of strings (TEXT column).
+// Send it from the frontend as a real array; it's stringified here.
+
+router.get("/guides", async (req, res) => {
+  try {
+    const [guides] = await pool.query(
+      `SELECT g.guideID, g.emergencyID, ec.topicTitle, g.guideTitle, g.overview,
+              g.steps, g.status, g.updated_at
+       FROM first_aid_guides g
+       JOIN emergency_cases ec ON g.emergencyID = ec.emergencyID
+       ORDER BY g.updated_at DESC`
+    );
+    res.json({ message: "Guides loaded.", guides });
+  } catch (error) {
+    console.error("Admin get guides error:", error);
+    res.status(500).json({ message: "Server error loading guides.", error: error.message });
+  }
+});
+
+router.get("/guides/:id", async (req, res) => {
+  try {
+    const [guides] = await pool.query(
+      `SELECT guideID, emergencyID, guideTitle, overview, steps, status, updated_at
+       FROM first_aid_guides WHERE guideID = ?`,
+      [req.params.id]
+    );
+    if (guides.length === 0) {
+      return res.status(404).json({ message: "Guide not found." });
+    }
+    res.json({ message: "Guide loaded.", guide: guides[0] });
+  } catch (error) {
+    console.error("Admin get guide error:", error);
+    res.status(500).json({ message: "Server error loading guide.", error: error.message });
+  }
+});
+
+router.post("/guides", async (req, res) => {
+  try {
+    const { emergencyID, guideTitle, overview, steps, status } = req.body;
+
+    if (!emergencyID || !guideTitle || !steps) {
+      return res.status(400).json({ message: "emergencyID, guideTitle and steps are required." });
+    }
+
+    // Accept either an array of step strings or an already-stringified JSON array
+    const stepsValue = Array.isArray(steps) ? JSON.stringify(steps) : steps;
+
+    const [result] = await pool.query(
+      `INSERT INTO first_aid_guides (emergencyID, guideTitle, overview, steps, status)
+       VALUES (?, ?, ?, ?, ?)`,
+      [emergencyID, guideTitle, overview || null, stepsValue, status || "Draft"]
+    );
+    res.status(201).json({ message: "Guide created.", guideID: result.insertId });
+  } catch (error) {
+    // emergencyID is UNIQUE on this table — a duplicate throws ER_DUP_ENTRY
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ message: "This emergency case already has a guide." });
+    }
+    console.error("Admin create guide error:", error);
+    res.status(500).json({ message: "Server error creating guide.", error: error.message });
+  }
+});
+
+router.put("/guides/:id", async (req, res) => {
+  try {
+    const { guideTitle, overview, steps, status } = req.body;
+
+    if (!guideTitle || !steps) {
+      return res.status(400).json({ message: "guideTitle and steps are required." });
+    }
+
+    const stepsValue = Array.isArray(steps) ? JSON.stringify(steps) : steps;
+
+    const [result] = await pool.query(
+      `UPDATE first_aid_guides
+       SET guideTitle = ?, overview = ?, steps = ?, status = ?
+       WHERE guideID = ?`,
+      [guideTitle, overview || null, stepsValue, status || "Draft", req.params.id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Guide not found." });
+    }
+    res.json({ message: "Guide updated." });
+  } catch (error) {
+    console.error("Admin update guide error:", error);
+    res.status(500).json({ message: "Server error updating guide.", error: error.message });
+  }
+});
+
+router.delete("/guides/:id", async (req, res) => {
+  try {
+    const [result] = await pool.query(
+      "DELETE FROM first_aid_guides WHERE guideID = ?",
+      [req.params.id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Guide not found." });
+    }
+    res.json({ message: "Guide deleted." });
+  } catch (error) {
+    console.error("Admin delete guide error:", error);
+    res.status(500).json({ message: "Server error deleting guide.", error: error.message });
+  }
+});
+
+// ============================================================
+// QUIZZES
+// ============================================================
+// Quizzes hang off a guide. Questions + answers follow the exact
+// same CRUD shape if you need them.
+
+router.get("/quizzes", async (req, res) => {
+  try {
+    const [quizzes] = await pool.query(
+      `SELECT q.quizID, q.guideID, g.guideTitle, q.quizTitle, q.description,
+              q.pass_mark, q.quizStatus, q.created_at
+       FROM quizzes q
+       JOIN first_aid_guides g ON q.guideID = g.guideID
+       ORDER BY q.created_at DESC`
+    );
+    res.json({ message: "Quizzes loaded.", quizzes });
+  } catch (error) {
+    console.error("Admin get quizzes error:", error);
+    res.status(500).json({ message: "Server error loading quizzes.", error: error.message });
+  }
+});
+
+router.post("/quizzes", async (req, res) => {
+  try {
+    const { guideID, quizTitle, description, pass_mark, quizStatus } = req.body;
+    if (!guideID || !quizTitle) {
+      return res.status(400).json({ message: "guideID and quizTitle are required." });
+    }
+    const [result] = await pool.query(
+      `INSERT INTO quizzes (guideID, quizTitle, description, pass_mark, quizStatus)
+       VALUES (?, ?, ?, ?, ?)`,
+      [guideID, quizTitle, description || null, pass_mark || 70, quizStatus || "draft"]
+    );
+    res.status(201).json({ message: "Quiz created.", quizID: result.insertId });
+  } catch (error) {
+    console.error("Admin create quiz error:", error);
+    res.status(500).json({ message: "Server error creating quiz.", error: error.message });
+  }
+});
+
+router.put("/quizzes/:id", async (req, res) => {
+  try {
+    const { quizTitle, description, pass_mark, quizStatus } = req.body;
+    if (!quizTitle) {
+      return res.status(400).json({ message: "quizTitle is required." });
+    }
+    const [result] = await pool.query(
+      `UPDATE quizzes
+       SET quizTitle = ?, description = ?, pass_mark = ?, quizStatus = ?
+       WHERE quizID = ?`,
+      [quizTitle, description || null, pass_mark || 70, quizStatus || "draft", req.params.id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Quiz not found." });
+    }
+    res.json({ message: "Quiz updated." });
+  } catch (error) {
+    console.error("Admin update quiz error:", error);
+    res.status(500).json({ message: "Server error updating quiz.", error: error.message });
+  }
+});
+
+router.delete("/quizzes/:id", async (req, res) => {
+  try {
+    const [result] = await pool.query("DELETE FROM quizzes WHERE quizID = ?", [req.params.id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Quiz not found." });
+    }
+    res.json({ message: "Quiz deleted." });
+  } catch (error) {
+    console.error("Admin delete quiz error:", error);
+    res.status(500).json({ message: "Server error deleting quiz.", error: error.message });
+  }
+});
+
+// ============================================================
+// FEEDBACK REVIEW
+// ============================================================
+
+// GET /api/admin/feedback  — newest first. Optional filter: ?status=new
+router.get("/feedback", async (req, res) => {
+  try {
+    const { status } = req.query;
+    const where = status ? "WHERE f.status = ?" : "";
+    const params = status ? [status] : [];
+
+    const [feedback] = await pool.query(
+      `SELECT f.feedbackID, f.userID, u.name AS userName, u.email AS userEmail,
+              f.emergencyID, ec.topicTitle, f.rating, f.message, f.status, f.submitted_at
+       FROM feedback f
+       JOIN users u ON f.userID = u.userID
+       JOIN emergency_cases ec ON f.emergencyID = ec.emergencyID
+       ${where}
+       ORDER BY f.submitted_at DESC`,
+      params
+    );
+    res.json({ message: "Feedback loaded.", feedback });
+  } catch (error) {
+    console.error("Admin get feedback error:", error);
+    res.status(500).json({ message: "Server error loading feedback.", error: error.message });
+  }
+});
+
+// PATCH /api/admin/feedback/:id/status  — mark reviewed
+// Body: { "status": "new" | "reviewed" }
+router.patch("/feedback/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!["new", "reviewed"].includes(status)) {
+      return res.status(400).json({ message: "Status must be 'new' or 'reviewed'." });
+    }
+    const [result] = await pool.query(
+      "UPDATE feedback SET status = ? WHERE feedbackID = ?",
+      [status, req.params.id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Feedback not found." });
+    }
+    res.json({ message: "Feedback status updated." });
+  } catch (error) {
+    console.error("Admin update feedback error:", error);
+    res.status(500).json({ message: "Server error updating feedback.", error: error.message });
+  }
+});
+
+router.delete("/feedback/:id", async (req, res) => {
+  try {
+    const [result] = await pool.query("DELETE FROM feedback WHERE feedbackID = ?", [req.params.id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Feedback not found." });
+    }
+    res.json({ message: "Feedback deleted." });
+  } catch (error) {
+    console.error("Admin delete feedback error:", error);
+    res.status(500).json({ message: "Server error deleting feedback.", error: error.message });
+  }
+});
+
+module.exports = router;

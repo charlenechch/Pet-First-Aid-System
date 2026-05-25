@@ -119,11 +119,6 @@ await pool.query(
   [user.userID]
 );
 
-await pool.query(
-  "UPDATE users SET last_login = UTC_TIMESTAMP() WHERE userID = ?",
-  [user.userID]
-);
-
 const [checkTime] = await pool.query(
   "SELECT last_login, UTC_TIMESTAMP() AS utc_now, NOW() AS mysql_now FROM users WHERE userID = ?",
   [user.userID]
