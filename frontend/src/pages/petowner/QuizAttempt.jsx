@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { availableQuizzes, quizQuestions } from "../../data/petOwnerData";
+import { apiRequest } from "../../api";
 import "../../styles/admin.css";
 import "../../styles/petOwner.css";
 
@@ -8,100 +8,126 @@ function QuizAttempt() {
   const { quizId } = useParams();
   const navigate = useNavigate();
 
-  const numericQuizId = Number(quizId);
-
-  const quiz = useMemo(
-    () => availableQuizzes.find((item) => item.id === numericQuizId),
-    [numericQuizId]
-  );
-
-  const questions = useMemo(
-    () => quizQuestions[numericQuizId] || [],
-    [numericQuizId]
-  );
+  const [quiz, setQuiz] = useState(null);
+  const [questions, setQuestions] = useState([]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
 
-  if (!quiz || questions.length === 0) {
-    return (
-      <div className="admin-page">
-        <div className="page-title-area">
-          <p className="page-subtitle">Quiz</p>
-          <h1>Quiz Not Found</h1>
-        </div>
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-        <section className="admin-table-card">
-          <p>
-            We could not find this quiz. Please go back and pick another one.
-          </p>
+  // Load quiz and questions from backend
+  useEffect(() => {
+    let isCancelled = false;
 
-          <button
-            className="primary-btn"
-            style={{ marginTop: "16px" }}
-            onClick={() => navigate("/petowner/quizzes")}
-          >
-            Back to Quizzes
-          </button>
-        </section>
-      </div>
-    );
-  }
+    async function loadQuiz() {
+      try {
+        setLoading(true);
+        setError("");
 
-  const currentQuestion = questions[currentIndex];
-  const isLastQuestion = currentIndex === questions.length - 1;
-  const progressPercent = Math.round(
-    ((currentIndex + 1) / questions.length) * 100
-  );
+        console.log("Loading quiz attempt:", quizId);
 
-  function selectAnswer(option) {
-    setAnswers({ ...answers, [currentQuestion.id]: option });
+        const data = await apiRequest(`/api/petowner/quizzes/${quizId}`);
+
+        if (isCancelled) return;
+
+        const formattedQuiz = {
+          id: data.quiz.quizID,
+          title: data.quiz.quizTitle,
+          description: data.quiz.description || "",
+          passingScore: data.quiz.pass_mark || 60,
+        };
+
+        const formattedQuestions = (data.questions || []).map((question) => ({
+          id: question.questionID,
+          questionText: question.questionText,
+          answers: question.answers || [],
+        }));
+
+        console.log("Quiz loaded:", formattedQuiz);
+        console.log("Questions loaded:", formattedQuestions);
+
+        setQuiz(formattedQuiz);
+        setQuestions(formattedQuestions);
+        setCurrentIndex(0);
+        setAnswers({});
+      } catch (error) {
+        if (isCancelled) return;
+
+        console.error("Load quiz error:", error);
+        setError(error.message || "Failed to load quiz.");
+        setQuiz(null);
+        setQuestions([]);
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadQuiz();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [quizId]);
+
+  function selectAnswer(answerID) {
+    if (!questions[currentIndex]) return;
+
+    setAnswers((prev) => ({
+      ...prev,
+      [questions[currentIndex].id]: answerID,
+    }));
   }
 
   function goNext() {
+    const currentQuestion = questions[currentIndex];
+
+    if (!currentQuestion) return;
+
     if (!answers[currentQuestion.id]) {
       alert("Please select an answer before continuing.");
       return;
     }
 
-    setCurrentIndex((prev) => prev + 1);
+    setCurrentIndex((prev) => Math.min(questions.length - 1, prev + 1));
   }
 
   function goPrev() {
     setCurrentIndex((prev) => Math.max(0, prev - 1));
   }
 
-  function submitQuiz() {
+  async function submitQuiz() {
+    const currentQuestion = questions[currentIndex];
+
+    if (!currentQuestion) return;
+
     if (!answers[currentQuestion.id]) {
       alert("Please select an answer before submitting.");
       return;
     }
 
-    let correctCount = 0;
+    try {
+      console.log("Submitting quiz answers:", answers);
 
-    questions.forEach((question) => {
-      if (answers[question.id] === question.correctAnswer) {
-        correctCount += 1;
-      }
-    });
+      const data = await apiRequest(`/api/petowner/quizzes/${quiz.id}/submit`, {
+        method: "POST",
+        body: JSON.stringify({
+          answers,
+        }),
+      });
 
-    const score = Math.round((correctCount / questions.length) * 100);
-    const result = score >= quiz.passingScore ? "Passed" : "Failed";
+      console.log("Quiz submit result:", data.result);
 
-    // Pass results via navigation state to the QuizResult page
-    navigate(`/petowner/quizzes/${quiz.id}/result`, {
-      state: {
-        quizId: quiz.id,
-        quizTitle: quiz.title,
-        passingScore: quiz.passingScore,
-        score,
-        result,
-        correctCount,
-        totalQuestions: questions.length,
-        answers,
-        questions,
-      },
-    });
+      navigate(`/petowner/quizzes/${quiz.id}/result`, {
+        state: data.result,
+      });
+    } catch (error) {
+      console.error("Submit quiz error:", error);
+      alert(error.message || "Failed to submit quiz.");
+    }
   }
 
   function exitQuiz() {
@@ -113,6 +139,70 @@ function QuizAttempt() {
 
     navigate("/petowner/quizzes");
   }
+
+  function retryLoadQuiz() {
+    window.location.reload();
+  }
+
+  if (loading) {
+    return (
+      <div className="admin-page">
+        <div className="page-title-area">
+          <p className="page-subtitle">Quiz Attempt</p>
+          <h1>Loading Quiz...</h1>
+        </div>
+
+        <section className="admin-table-card">
+          <div className="petowner-empty-state">
+            <span className="empty-icon">⏳</span>
+            <p>Please wait while we load the quiz questions.</p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (error || !quiz || questions.length === 0) {
+    return (
+      <div className="admin-page">
+        <div className="page-title-area">
+          <p className="page-subtitle">Quiz</p>
+          <h1>Quiz Not Found</h1>
+        </div>
+
+        <section className="admin-table-card">
+          <div className="petowner-empty-state">
+            <span className="empty-icon">⚠️</span>
+            <p>
+              {error ||
+                "We could not find this quiz. Please go back and pick another one."}
+            </p>
+
+            <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+              <button className="primary-btn" onClick={retryLoadQuiz}>
+                Try Again
+              </button>
+
+              <button
+                className="secondary-btn"
+                onClick={() => navigate("/petowner/quizzes")}
+              >
+                Back to Quizzes
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  const currentQuestion = questions[currentIndex];
+
+  const isLastQuestion = currentIndex === questions.length - 1;
+
+  const progressPercent = Math.round(
+    ((currentIndex + 1) / questions.length) * 100
+  );
 
   return (
     <div className="admin-page">
@@ -133,6 +223,7 @@ function QuizAttempt() {
             <span>
               Question {currentIndex + 1} of {questions.length}
             </span>
+
             <span>{progressPercent}%</span>
           </div>
 
@@ -147,21 +238,24 @@ function QuizAttempt() {
         <p className="quiz-question-text">{currentQuestion.questionText}</p>
 
         <div className="quiz-option-list">
-          {currentQuestion.options.map((option) => (
+          {currentQuestion.answers.map((answer) => (
             <label
-              key={option}
+              key={answer.answerID}
               className={`quiz-option-item ${
-                answers[currentQuestion.id] === option ? "selected" : ""
+                answers[currentQuestion.id] === answer.answerID
+                  ? "selected"
+                  : ""
               }`}
             >
               <input
                 type="radio"
                 name={`question-${currentQuestion.id}`}
-                value={option}
-                checked={answers[currentQuestion.id] === option}
-                onChange={() => selectAnswer(option)}
+                value={answer.answerID}
+                checked={answers[currentQuestion.id] === answer.answerID}
+                onChange={() => selectAnswer(answer.answerID)}
               />
-              <span>{option}</span>
+
+              <span>{answer.answerText}</span>
             </label>
           ))}
         </div>
@@ -178,11 +272,7 @@ function QuizAttempt() {
           </button>
 
           {isLastQuestion ? (
-            <button
-              type="button"
-              className="primary-btn"
-              onClick={submitQuiz}
-            >
+            <button type="button" className="primary-btn" onClick={submitQuiz}>
               Submit Quiz
             </button>
           ) : (

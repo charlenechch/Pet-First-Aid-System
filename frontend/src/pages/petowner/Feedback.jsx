@@ -1,33 +1,105 @@
-import { useState } from "react";
-import { myFeedback as initialFeedback } from "../../data/petOwnerData";
+import { useEffect, useState } from "react";
+import { apiRequest } from "../../api";
 import "../../styles/admin.css";
 import "../../styles/petOwner.css";
 
 function PetOwnerFeedback() {
-  const [feedbackList, setFeedbackList] = useState(initialFeedback);
+  const [profile, setProfile] = useState({
+    name: "",
+    email: "",
+  });
+
+  const [feedbackList, setFeedbackList] = useState([]);
+  const [guideOptions, setGuideOptions] = useState([]);
 
   const [form, setForm] = useState({
-    guideTitle: "",
+    emergencyID: "",
     rating: 0,
     message: "",
   });
 
   const [hoverRating, setHoverRating] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const guideOptions = [
-    "Choking & Airway Blockage",
-    "Dog Heatstroke & Overheating",
-    "Cat Poisoning Response",
-    "Rabbit Heatstroke Care",
-    "Bird Wound & Bleeding Care",
-    "Dog Seizure First Aid",
-    "General Feedback",
-  ];
+  useEffect(() => {
+    let isCancelled = false;
 
-  function handleSubmit(event) {
+    async function loadFeedbackPage() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const [profileData, topicsData, feedbackData] = await Promise.all([
+          apiRequest("/api/profile/me"),
+          apiRequest("/api/petowner/feedback/topics"),
+          apiRequest("/api/petowner/feedback"),
+        ]);
+
+        if (isCancelled) return;
+
+        setProfile({
+          name: profileData.user?.name || "",
+          email: profileData.user?.email || "",
+        });
+
+        const formattedTopics = (topicsData.topics || []).map((topic) => ({
+          emergencyID: topic.emergencyID,
+          title: topic.topicTitle,
+          petName: topic.petName,
+          icon: topic.icon || "🐾",
+          severity: topic.severity,
+        }));
+
+        const formattedFeedback = (feedbackData.feedback || []).map((item) => ({
+          id: item.feedbackID,
+          emergencyID: item.emergencyID,
+          guideTitle: item.topicTitle,
+          rating: item.rating,
+          message: item.message,
+          submittedAt: item.submitted_at
+            ? new Date(item.submitted_at).toLocaleString("en-MY", {
+                timeZone: "Asia/Kuala_Lumpur",
+                year: "numeric",
+                month: "short",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "-",
+          status:
+            item.status === "reviewed" || item.status === "Reviewed"
+              ? "Reviewed"
+              : "New",
+        }));
+
+        setGuideOptions(formattedTopics);
+        setFeedbackList(formattedFeedback);
+      } catch (error) {
+        if (isCancelled) return;
+
+        console.error("Load feedback page error:", error);
+        setError(error.message || "Failed to load feedback page.");
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadFeedbackPage();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  async function handleSubmit(event) {
     event.preventDefault();
 
-    if (!form.guideTitle) {
+    if (!form.emergencyID) {
       alert("Please select a topic.");
       return;
     }
@@ -37,29 +109,67 @@ function PetOwnerFeedback() {
       return;
     }
 
-    if (!form.message.trim()) {
-      alert("Please enter your feedback message.");
+    if (form.message.trim().length < 10) {
+      alert("Please enter at least 10 characters for your feedback.");
       return;
     }
 
-    const newFeedback = {
-      id: Date.now(),
-      guideTitle: form.guideTitle,
-      rating: form.rating,
-      message: form.message.trim(),
-      submittedAt: "Just now",
-      status: "New",
-    };
+    try {
+      setSubmitting(true);
+      setError("");
 
-    setFeedbackList((prev) => [newFeedback, ...prev]);
+      const data = await apiRequest("/api/petowner/feedback", {
+        method: "POST",
+        body: JSON.stringify({
+          emergencyID: form.emergencyID,
+          rating: form.rating,
+          message: form.message.trim(),
+        }),
+      });
+
+      const selectedTopic = guideOptions.find(
+        (topic) => String(topic.emergencyID) === String(form.emergencyID)
+      );
+
+      const newFeedback = {
+        id: data.feedbackID,
+        emergencyID: form.emergencyID,
+        guideTitle: selectedTopic?.title || "Selected Guide",
+        rating: form.rating,
+        message: form.message.trim(),
+        submittedAt: "Just now",
+        status: "New",
+      };
+
+      setFeedbackList((prev) => [newFeedback, ...prev]);
+
+      setForm({
+        emergencyID: "",
+        rating: 0,
+        message: "",
+      });
+
+      setHoverRating(0);
+
+      alert("Thank you! Your feedback has been submitted.");
+    } catch (error) {
+      console.error("Submit feedback error:", error);
+      alert(error.message || "Failed to submit feedback.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function clearForm() {
+    if (submitting) return;
 
     setForm({
-      guideTitle: "",
+      emergencyID: "",
       rating: 0,
       message: "",
     });
 
-    alert("Thank you! Your feedback has been submitted.");
+    setHoverRating(0);
   }
 
   function renderStarInput() {
@@ -75,9 +185,11 @@ function PetOwnerFeedback() {
             <span
               key={value}
               className={shouldFill ? "active" : ""}
-              onClick={() => setForm({ ...form, rating: value })}
-              onMouseEnter={() => setHoverRating(value)}
-              onMouseLeave={() => setHoverRating(0)}
+              onClick={() =>
+                !submitting && setForm({ ...form, rating: value })
+              }
+              onMouseEnter={() => !submitting && setHoverRating(value)}
+              onMouseLeave={() => !submitting && setHoverRating(0)}
               role="button"
               aria-label={`${value} star`}
             >
@@ -90,7 +202,27 @@ function PetOwnerFeedback() {
   }
 
   function renderStars(rating) {
-    return "★".repeat(rating) + "☆".repeat(5 - rating);
+    return "★".repeat(Number(rating)) + "☆".repeat(5 - Number(rating));
+  }
+
+  if (loading) {
+    return (
+      <div className="admin-page">
+        <div className="page-title-row">
+          <div className="page-title-area">
+            <p className="page-subtitle">Share Your Thoughts</p>
+            <h1>Feedback</h1>
+          </div>
+        </div>
+
+        <section className="admin-table-card">
+          <div className="petowner-empty-state">
+            <span className="empty-icon">⏳</span>
+            <p>Loading feedback page...</p>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   return (
@@ -102,6 +234,14 @@ function PetOwnerFeedback() {
         </div>
       </div>
 
+      {error && (
+        <section className="admin-table-card" style={{ marginBottom: "20px" }}>
+          <p className="form-note" style={{ color: "#b6533f", margin: 0 }}>
+            {error}
+          </p>
+        </section>
+      )}
+
       <div className="dashboard-grid">
         <section className="admin-form-card">
           <h2>Submit Feedback</h2>
@@ -111,19 +251,39 @@ function PetOwnerFeedback() {
             Your feedback helps improve the guides for every pet owner.
           </p>
 
+          <div
+            className="form-note"
+            style={{
+              padding: "12px 14px",
+              border: "1px solid #e5e2dc",
+              borderRadius: "12px",
+              marginBottom: "16px",
+              background: "#faf9f6",
+            }}
+          >
+            <strong>Submitting as:</strong>{" "}
+            {profile.name || "Pet Owner"}{" "}
+            {profile.email ? `(${profile.email})` : ""}
+          </div>
+
           <form onSubmit={handleSubmit} className="admin-form">
             <label>
               Topic / Guide
               <select
-                value={form.guideTitle}
+                value={form.emergencyID}
                 onChange={(event) =>
-                  setForm({ ...form, guideTitle: event.target.value })
+                  setForm({ ...form, emergencyID: event.target.value })
                 }
+                disabled={submitting}
               >
                 <option value="">Select a topic</option>
+
                 {guideOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
+                  <option
+                    key={option.emergencyID}
+                    value={option.emergencyID}
+                  >
+                    {option.icon} {option.title} - {option.petName}
                   </option>
                 ))}
               </select>
@@ -143,20 +303,24 @@ function PetOwnerFeedback() {
                 onChange={(event) =>
                   setForm({ ...form, message: event.target.value })
                 }
+                disabled={submitting}
               />
             </label>
 
             <div className="form-actions">
-              <button type="submit" className="primary-btn">
-                Submit Feedback
+              <button
+                type="submit"
+                className="primary-btn"
+                disabled={submitting}
+              >
+                {submitting ? "Submitting..." : "Submit Feedback"}
               </button>
 
               <button
                 type="button"
                 className="secondary-btn"
-                onClick={() =>
-                  setForm({ guideTitle: "", rating: 0, message: "" })
-                }
+                onClick={clearForm}
+                disabled={submitting}
               >
                 Clear
               </button>
@@ -180,6 +344,7 @@ function PetOwnerFeedback() {
                 >
                   <div className="feedback-history-card-header">
                     <h3>{feedback.guideTitle}</h3>
+
                     <span className="feedback-history-stars">
                       {renderStars(feedback.rating)}
                     </span>
@@ -191,6 +356,7 @@ function PetOwnerFeedback() {
 
                   <div className="feedback-history-meta">
                     <span>{feedback.submittedAt}</span>
+
                     <span
                       className={
                         feedback.status === "Reviewed"

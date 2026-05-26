@@ -17,9 +17,7 @@ function QuizResult() {
         </div>
 
         <section className="admin-table-card">
-          <p>
-            No quiz result found. Try attempting a quiz first.
-          </p>
+          <p>No quiz result found. Try attempting a quiz first.</p>
 
           <button
             className="primary-btn"
@@ -34,29 +32,34 @@ function QuizResult() {
   }
 
   const {
+    quizID,
     quizId,
     quizTitle,
     passingScore,
     score,
+    passed,
     correctCount,
     totalQuestions,
-    result: resultLabel,
-    answers,
-    questions,
+    review,
   } = result;
 
-  const passed = resultLabel === "Passed";
+  const finalQuizId = quizID || quizId;
+  const finalPassingScore = passingScore || 60;
+  const finalReview = Array.isArray(review) ? review : [];
 
   function getFeedbackMessage() {
     if (passed && score === 100) {
       return "Perfect score! You have mastered this topic. Great work.";
     }
+
     if (passed) {
       return "Well done! You passed the quiz and showed solid understanding.";
     }
-    if (score >= passingScore - 15) {
+
+    if (score >= finalPassingScore - 15) {
       return "Close one! Review the highlighted answers and try again.";
     }
+
     return "Don't worry — review the guide and re-attempt the quiz when you're ready.";
   }
 
@@ -71,9 +74,12 @@ function QuizResult() {
 
       <section className="quiz-result-summary">
         <div
-          className={`quiz-result-score-circle ${passed ? "passed" : "failed"}`}
+          className={`quiz-result-score-circle ${
+            passed ? "passed" : "failed"
+          }`}
         >
           <span className="quiz-result-score-value">{score}%</span>
+
           <span className="quiz-result-score-label">
             {passed ? "Passed" : "Failed"}
           </span>
@@ -88,13 +94,15 @@ function QuizResult() {
         <p className="quiz-result-message" style={{ marginBottom: "20px" }}>
           You got <strong>{correctCount}</strong> out of{" "}
           <strong>{totalQuestions}</strong> correct. Passing score is{" "}
-          <strong>{passingScore}%</strong>.
+          <strong>{finalPassingScore}%</strong>.
         </p>
 
         <div className="quiz-result-actions">
           <button
             className="primary-btn"
-            onClick={() => navigate(`/petowner/quizzes/${quizId}/attempt`)}
+            onClick={() =>
+              navigate(`/petowner/quizzes/${finalQuizId}/attempt`)
+            }
           >
             Retry Quiz
           </button>
@@ -111,33 +119,37 @@ function QuizResult() {
       <section className="quiz-result-review">
         <h2>Review Your Answers</h2>
 
-        {questions.map((question, index) => {
-          const userAnswer = answers[question.id];
-          const isCorrect = userAnswer === question.correctAnswer;
-
-          return (
-            <div key={question.id} className="quiz-review-item">
+        {finalReview.length > 0 ? (
+          finalReview.map((item, index) => (
+            <div key={item.questionID} className="quiz-review-item">
               <p className="quiz-review-question">
-                {index + 1}. {question.questionText}
+                {index + 1}. {item.questionText}
               </p>
 
               <p
                 className={`quiz-review-answer ${
-                  isCorrect ? "correct" : "incorrect"
+                  item.isCorrect ? "correct" : "incorrect"
                 }`}
               >
                 <strong>Your answer:</strong>{" "}
-                {userAnswer || "(no answer)"} {isCorrect ? "✓" : "✗"}
+                {item.selectedAnswerText || item.selectedAnswer || "Selected answer"}{" "}
+                {item.isCorrect ? "✓" : "✗"}
               </p>
 
-              {!isCorrect && (
+              {!item.isCorrect && (
                 <p className="quiz-review-answer correct">
-                  <strong>Correct answer:</strong> {question.correctAnswer}
+                  <strong>Correct answer:</strong>{" "}
+                  {item.correctAnswer || "Correct answer not available"}
                 </p>
               )}
             </div>
-          );
-        })}
+          ))
+        ) : (
+          <div className="petowner-empty-state">
+            <span className="empty-icon">📝</span>
+            <p>No answer review available.</p>
+          </div>
+        )}
       </section>
     </div>
   );

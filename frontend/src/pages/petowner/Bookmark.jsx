@@ -1,17 +1,74 @@
-import { useMemo, useState } from "react";
-import { bookmarkedTopics as initialBookmarks } from "../../data/petOwnerData";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../../api";
 import "../../styles/admin.css";
 import "../../styles/petOwner.css";
 
 function Bookmark() {
-  const [bookmarks, setBookmarks] = useState(initialBookmarks);
+  const navigate = useNavigate();
+
+  const [bookmarks, setBookmarks] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [petFilter, setPetFilter] = useState("All");
 
-  const petOptions = useMemo(() => {
-    const pets = new Set(initialBookmarks.map((bookmark) => bookmark.pet));
-    return ["All", ...Array.from(pets)];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Load bookmarks from backend database
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadBookmarks() {
+      try {
+        setLoading(true);
+        setError("");
+
+        console.log("Loading pet owner bookmarks...");
+
+        const data = await apiRequest("/api/petowner/bookmarks");
+
+        if (isCancelled) return;
+
+        const formattedBookmarks = (data.bookmarks || []).map((bookmark) => ({
+          id: bookmark.emergencyID,
+          bookmarkID: bookmark.bookmarkID,
+          title: bookmark.topicTitle,
+          pet: bookmark.petName,
+          petEmoji: bookmark.icon || "🐾",
+          severity: bookmark.severity || "Moderate",
+          summary: bookmark.topicDesc || "",
+          savedAt: bookmark.saved_at
+            ? new Date(bookmark.saved_at).toLocaleDateString()
+            : "recently",
+        }));
+
+        console.log("Bookmarks loaded:", formattedBookmarks);
+
+        setBookmarks(formattedBookmarks);
+      } catch (error) {
+        if (isCancelled) return;
+
+        console.error("Load bookmarks error:", error);
+        setError(error.message || "Failed to load bookmarks.");
+        setBookmarks([]);
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadBookmarks();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
+
+  const petOptions = useMemo(() => {
+    const pets = new Set(bookmarks.map((bookmark) => bookmark.pet));
+    return ["All", ...Array.from(pets)];
+  }, [bookmarks]);
 
   const filteredBookmarks = useMemo(() => {
     return bookmarks.filter((bookmark) => {
@@ -28,16 +85,33 @@ function Bookmark() {
     });
   }, [bookmarks, searchKeyword, petFilter]);
 
-  function removeBookmark(id) {
+  async function removeBookmark(id) {
     const confirmRemove = window.confirm("Remove this topic from bookmarks?");
 
     if (!confirmRemove) return;
 
-    setBookmarks((prev) => prev.filter((bookmark) => bookmark.id !== id));
+    try {
+      console.log("Removing bookmark emergencyID:", id);
+
+      await apiRequest(`/api/petowner/bookmarks/${id}`, {
+        method: "DELETE",
+      });
+
+      setBookmarks((prev) => prev.filter((bookmark) => bookmark.id !== id));
+
+      console.log("Bookmark removed successfully.");
+    } catch (error) {
+      console.error("Remove bookmark error:", error);
+      alert(error.message || "Failed to remove bookmark.");
+    }
   }
 
   function openTopic(bookmark) {
-    alert(`Open guide for "${bookmark.title}". (Hardcoded for now.)`);
+    navigate(`/guide-details/${bookmark.id}`);
+  }
+
+  function retryLoadBookmarks() {
+    window.location.reload();
   }
 
   return (
@@ -80,12 +154,31 @@ function Bookmark() {
           </select>
         </div>
 
-        {filteredBookmarks.length > 0 ? (
+        {loading && (
+          <div className="petowner-empty-state">
+            <span className="empty-icon">⏳</span>
+            <p>Loading your bookmarks...</p>
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="petowner-empty-state">
+            <span className="empty-icon">⚠️</span>
+            <p>{error}</p>
+
+            <button className="primary-btn" onClick={retryLoadBookmarks}>
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && filteredBookmarks.length > 0 ? (
           <div className="bookmark-grid">
             {filteredBookmarks.map((bookmark) => (
               <article key={bookmark.id} className="bookmark-card">
                 <div className="bookmark-card-header">
                   <h3>{bookmark.title}</h3>
+
                   <span
                     className={`severity-badge ${bookmark.severity.toLowerCase()}`}
                   >
@@ -124,10 +217,13 @@ function Bookmark() {
             ))}
           </div>
         ) : (
-          <div className="petowner-empty-state">
-            <span className="empty-icon">🔖</span>
-            <p>No bookmarks found. Try a different search or pet filter.</p>
-          </div>
+          !loading &&
+          !error && (
+            <div className="petowner-empty-state">
+              <span className="empty-icon">🔖</span>
+              <p>No bookmarks found. Try a different search or pet filter.</p>
+            </div>
+          )
         )}
       </section>
     </div>

@@ -45,8 +45,11 @@ function App() {
   const isPetOwnerRoute = location.pathname.startsWith("/petowner");
 
   const hideFooterRoutes = ["/login", "/register", "/forgot-password"];
+
   const hideFooter =
-    hideFooterRoutes.includes(location.pathname) || isAdminRoute || isPetOwnerRoute;
+    hideFooterRoutes.includes(location.pathname) ||
+    isAdminRoute ||
+    isPetOwnerRoute;
 
   return (
     <>
@@ -56,13 +59,15 @@ function App() {
       {!isAdminRoute && !isPetOwnerRoute && <Navbar />}
 
       <Routes>
-        {/* Public routes */}
+        {/* ================= PUBLIC ROUTES ================= */}
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
 
+        {/* 7.1 and 7.2: Search, filter, bookmark emergency topics */}
         <Route path="/emergency-search" element={<EmergencySearch />} />
         <Route path="/topics" element={<EmergencySearch />} />
 
+        {/* Emergency topic details */}
         <Route path="/guide-details/:id" element={<GuideDetails />} />
 
         <Route path="/feedback" element={<PublicFeedback />} />
@@ -72,7 +77,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Admin routes */}
+        {/* ================= ADMIN ROUTES ================= */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
@@ -84,19 +89,27 @@ function App() {
           <Route path="profile" element={<AdminProfile />} />
         </Route>
 
-        {/* Pet Owner routes */}
+        {/* ================= PET OWNER ROUTES ================= */}
         <Route path="/petowner" element={<PetOwnerLayout />}>
           <Route index element={<Navigate to="/petowner/dashboard" replace />} />
           <Route path="dashboard" element={<PetOwnerDashboard />} />
           <Route path="profile" element={<Profile />} />
+
+          {/* Pet owner can also access emergency search inside layout */}
+          <Route path="emergency-search" element={<EmergencySearch />} />
+
+          {/* 7.1: Pet owner bookmarks emergency topic */}
           <Route path="bookmarks" element={<Bookmark />} />
+
+          {/* 7.4: Pet owner attempts quiz and views result */}
           <Route path="quizzes" element={<QuizList />} />
           <Route path="quizzes/:quizId/attempt" element={<QuizAttempt />} />
           <Route path="quizzes/:quizId/result" element={<QuizResult />} />
+
           <Route path="feedback" element={<PetOwnerFeedback />} />
         </Route>
 
-        {/* Fallback route */}
+        {/* ================= FALLBACK ROUTE ================= */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 

@@ -53,6 +53,7 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [savingPet, setSavingPet] = useState(false);
 
   const [error, setError] = useState("");
   const [successToast, setSuccessToast] = useState("");
@@ -73,44 +74,55 @@ function Profile() {
       .toUpperCase();
   }
 
-function formatDate(dateValue) {
-  if (!dateValue) return "-";
+  function formatDate(dateValue) {
+    if (!dateValue) return "-";
 
-  let date;
+    let date;
 
-  if (typeof dateValue === "string") {
-    // MySQL format: "2026-05-21 03:40:00"
-    if (dateValue.includes(" ") && !dateValue.includes("T")) {
-      date = new Date(dateValue.replace(" ", "T") + "Z");
-    }
-    // ISO format without timezone
-    else if (dateValue.includes("T") && !dateValue.endsWith("Z")) {
-      date = new Date(dateValue + "Z");
-    }
-    // ISO format with timezone
-    else {
+    if (typeof dateValue === "string") {
+      if (dateValue.includes(" ") && !dateValue.includes("T")) {
+        date = new Date(dateValue.replace(" ", "T") + "Z");
+      } else if (dateValue.includes("T") && !dateValue.endsWith("Z")) {
+        date = new Date(dateValue + "Z");
+      } else {
+        date = new Date(dateValue);
+      }
+    } else {
       date = new Date(dateValue);
     }
-  } else {
-    date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return "-";
+    }
+
+    return date.toLocaleString("en-MY", {
+      timeZone: "Asia/Kuala_Lumpur",
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
   }
 
-  if (Number.isNaN(date.getTime())) {
-    return "-";
+  function getPetEmoji(typeName) {
+    const match = petTypes.find((petType) => petType.name === typeName);
+    return match ? match.emoji : "🐾";
   }
 
-  return date.toLocaleString("en-MY", {
-    timeZone: "Asia/Kuala_Lumpur",
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
+  function mapPetsFromBackend(pets = []) {
+    return pets.map((pet) => ({
+      id: pet.userPetID,
+      petID: pet.petID,
+      type: pet.petName,
+      name: pet.userPetName,
+      breed: pet.breed || "",
+      emoji: pet.icon || getPetEmoji(pet.petName),
+    }));
+  }
 
-  function mapUserToProfile(user, oldPets = []) {
+  function mapUserToProfile(user, pets = []) {
     return {
       userID: user.userID || "",
       name: user.name || "",
@@ -123,7 +135,7 @@ function formatDate(dateValue) {
       lastLogin: formatDate(user.last_login),
       initials: getInitials(user.name),
       avatarUrl: "",
-      pets: oldPets,
+      pets,
     };
   }
 
@@ -133,6 +145,12 @@ function formatDate(dateValue) {
     } catch {
       return {};
     }
+  }
+
+  function handleUnauthorized() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login", { replace: true });
   }
 
   function showSuccess(message) {
@@ -163,15 +181,11 @@ function formatDate(dateValue) {
         });
 
         const data = await readJson(response);
-        console.log("BACKEND LAST LOGIN:", data.user.last_login);
-console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
 
         if (!isMounted) return;
 
         if (response.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          navigate("/login", { replace: true });
+          handleUnauthorized();
           return;
         }
 
@@ -180,7 +194,9 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
           return;
         }
 
-        setProfile((prev) => mapUserToProfile(data.user, prev.pets));
+        const mappedPets = mapPetsFromBackend(data.pets || []);
+
+        setProfile(() => mapUserToProfile(data.user, mappedPets));
         localStorage.setItem("user", JSON.stringify(data.user));
       } catch (error) {
         console.error("Load profile error:", error);
@@ -201,11 +217,6 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
       isMounted = false;
     };
   }, [navigate]);
-
-  function getPetEmoji(typeName) {
-    const match = petTypes.find((petType) => petType.name === typeName);
-    return match ? match.emoji : "🐾";
-  }
 
   function openEditModal() {
     setProfileForm({
@@ -270,9 +281,7 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
       const data = await readJson(response);
 
       if (response.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/login", { replace: true });
+        handleUnauthorized();
         return;
       }
 
@@ -356,9 +365,7 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
       const data = await readJson(response);
 
       if (response.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/login", { replace: true });
+        handleUnauthorized();
         return;
       }
 
@@ -378,7 +385,14 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
   }
 
   function openAddPetModal() {
-    setPetForm({ id: null, type: "", name: "", breed: "" });
+    setPetForm({
+      id: null,
+      type: "",
+      name: "",
+      breed: "",
+    });
+
+    setError("");
     setIsPetModalOpen(true);
   }
 
@@ -390,15 +404,19 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
       breed: pet.breed || "",
     });
 
+    setError("");
     setIsPetModalOpen(true);
   }
 
   function closePetModal() {
+    if (savingPet) return;
     setIsPetModalOpen(false);
+    setError("");
   }
 
-  function handlePetSubmit(event) {
+  async function handlePetSubmit(event) {
     event.preventDefault();
+    setError("");
 
     if (!petForm.type) {
       alert("Please select a pet type.");
@@ -410,58 +428,128 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
       return;
     }
 
-    const emoji = getPetEmoji(petForm.type);
+    try {
+      setSavingPet(true);
 
-    if (petForm.id) {
-      setProfile((prev) => ({
-        ...prev,
-        pets: prev.pets.map((pet) =>
-          pet.id === petForm.id
-            ? {
-                ...pet,
-                type: petForm.type,
-                name: petForm.name.trim(),
-                breed: petForm.breed.trim(),
-                emoji,
-              }
-            : pet
-        ),
-      }));
+      const token = getToken();
 
-      showSuccess("Pet updated successfully.");
-    } else {
-      const newPet = {
-        id: Date.now(),
-        type: petForm.type,
-        name: petForm.name.trim(),
-        breed: petForm.breed.trim(),
-        emoji,
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      const isEdit = Boolean(petForm.id);
+
+      const response = await fetch(
+        isEdit
+          ? `${API_BASE_URL}/api/profile/pets/${petForm.id}`
+          : `${API_BASE_URL}/api/profile/pets`,
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            type: petForm.type,
+            name: petForm.name.trim(),
+            breed: petForm.breed.trim(),
+          }),
+        }
+      );
+
+      const data = await readJson(response);
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!response.ok) {
+        alert(data.message || "Failed to save pet.");
+        return;
+      }
+
+      const savedPet = {
+        id: data.pet.userPetID,
+        petID: data.pet.petID,
+        type: data.pet.petName,
+        name: data.pet.userPetName,
+        breed: data.pet.breed || "",
+        emoji: data.pet.icon || getPetEmoji(data.pet.petName),
       };
 
-      setProfile((prev) => ({
-        ...prev,
-        pets: [...prev.pets, newPet],
-      }));
+      if (isEdit) {
+        setProfile((prev) => ({
+          ...prev,
+          pets: prev.pets.map((pet) =>
+            pet.id === petForm.id ? savedPet : pet
+          ),
+        }));
 
-      showSuccess("Pet added successfully.");
+        showSuccess("Pet updated successfully.");
+      } else {
+        setProfile((prev) => ({
+          ...prev,
+          pets: [savedPet, ...prev.pets],
+        }));
+
+        showSuccess("Pet added successfully.");
+      }
+
+      setIsPetModalOpen(false);
+    } catch (error) {
+      console.error("Save pet error:", error);
+      alert("Cannot connect to server. Please make sure backend is running.");
+    } finally {
+      setSavingPet(false);
     }
-
-    closePetModal();
   }
 
-  function removePet(pet) {
+  async function removePet(pet) {
     const confirmRemove = window.confirm(
       `Remove ${pet.name} (${pet.type}) from your pets?`
     );
 
     if (!confirmRemove) return;
 
-    setProfile((prev) => ({
-      ...prev,
-      pets: prev.pets.filter((item) => item.id !== pet.id),
-    }));
+    try {
+      const token = getToken();
 
-    showSuccess("Pet removed successfully.");
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/profile/pets/${pet.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await readJson(response);
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!response.ok) {
+        alert(data.message || "Failed to remove pet.");
+        return;
+      }
+
+      setProfile((prev) => ({
+        ...prev,
+        pets: prev.pets.filter((item) => item.id !== pet.id),
+      }));
+
+      showSuccess("Pet removed successfully.");
+    } catch (error) {
+      console.error("Remove pet error:", error);
+      alert("Cannot connect to server. Please make sure backend is running.");
+    }
   }
 
   function renderEditModal() {
@@ -479,7 +567,11 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
               <h2>Edit Profile</h2>
             </div>
 
-            <button type="button" className="modal-close-btn" onClick={closeEditModal}>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={closeEditModal}
+            >
               ×
             </button>
           </div>
@@ -690,7 +782,12 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
               <h2>{petForm.id ? "Edit Pet" : "Add New Pet"}</h2>
             </div>
 
-            <button type="button" className="modal-close-btn" onClick={closePetModal}>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={closePetModal}
+              disabled={savingPet}
+            >
               ×
             </button>
           </div>
@@ -706,6 +803,7 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
                     type: event.target.value,
                   }))
                 }
+                disabled={savingPet}
               >
                 <option value="">Select pet type</option>
                 {petTypes.map((petType) => (
@@ -728,6 +826,7 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
                     name: event.target.value,
                   }))
                 }
+                disabled={savingPet}
               />
             </label>
 
@@ -746,15 +845,25 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
                     breed: event.target.value,
                   }))
                 }
+                disabled={savingPet}
               />
             </label>
 
             <div className="form-actions">
-              <button type="submit" className="primary-btn">
-                {petForm.id ? "Save Changes" : "+ Add Pet"}
+              <button type="submit" className="primary-btn" disabled={savingPet}>
+                {savingPet
+                  ? "Saving..."
+                  : petForm.id
+                  ? "Save Changes"
+                  : "+ Add Pet"}
               </button>
 
-              <button type="button" className="secondary-btn" onClick={closePetModal}>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={closePetModal}
+                disabled={savingPet}
+              >
                 Cancel
               </button>
             </div>
@@ -801,7 +910,7 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
         </div>
       </div>
 
-      {error && !isEditModalOpen && !isPasswordModalOpen && (
+      {error && !isEditModalOpen && !isPasswordModalOpen && !isPetModalOpen && (
         <section className="admin-table-card" style={{ marginBottom: "20px" }}>
           <p className="form-note" style={{ color: "#b6533f", margin: 0 }}>
             {error}
@@ -898,9 +1007,9 @@ console.log("FORMATTED LAST LOGIN:", formatDate(data.user.last_login));
               </p>
             </div>
 
-           <button className="primary-btn add-pet-btn" onClick={openAddPetModal}>
-            + Add Pet
-          </button>
+            <button className="primary-btn add-pet-btn" onClick={openAddPetModal}>
+              + Add Pet
+            </button>
           </div>
 
           {profile.pets.length > 0 ? (
