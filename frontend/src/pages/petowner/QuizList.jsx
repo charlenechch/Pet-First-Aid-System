@@ -7,53 +7,49 @@ import "../../styles/petOwner.css";
 function QuizList() {
   const navigate = useNavigate();
 
-  const [quizzes, setQuizzes] = useState([]);
+  const [quizResults, setQuizResults] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState("");
-  const [difficultyFilter, setDifficultyFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Load quizzes from backend database
+  // Load quiz results from backend database
   useEffect(() => {
     let isCancelled = false;
 
-    async function loadQuizzes() {
+    async function loadQuizResults() {
       try {
         setLoading(true);
         setError("");
 
-        console.log("Loading quizzes from backend...");
-
-        const data = await apiRequest("/api/petowner/quizzes");
+        const data = await apiRequest("/api/petowner/quiz-results");
 
         if (isCancelled) return;
 
-        const formattedQuizzes = (data.quizzes || []).map((quiz) => ({
-          id: quiz.quizID,
-          title: quiz.quizTitle,
-          description: quiz.description || "",
-          pet: quiz.petName || "Pet",
-          petEmoji: quiz.icon || "🐾",
-          questions: quiz.totalQuestions || quiz.questionCount || "-",
-          passingScore: quiz.pass_mark || quiz.passingScore || 60,
-          difficulty: quiz.difficulty || "Beginner",
-          attempted: Number(quiz.attempts || 0) > 0,
-          bestScore:
-            quiz.bestScore !== null && quiz.bestScore !== undefined
-              ? quiz.bestScore
-              : null,
+        const formattedResults = (data.results || []).map((result) => ({
+          resultID: result.resultID,
+          quizID: result.quizID,
+          quizTitle: result.quizTitle,
+          description: result.description || "",
+          topicTitle: result.topicTitle || "First Aid Topic",
+          pet: result.petName || "Pet",
+          petEmoji: result.icon || "🐾",
+          severity: result.severity || "-",
+          score: Number(result.score || 0),
+          totalQuestions: result.total_questions || "-",
+          passed: Number(result.passed) === 1 || result.passed === true,
+          passingScore: result.pass_mark || 60,
+          attemptedAt: result.attempted_at,
         }));
 
-        console.log("Quizzes loaded:", formattedQuizzes);
-
-        setQuizzes(formattedQuizzes);
+        setQuizResults(formattedResults);
       } catch (error) {
         if (isCancelled) return;
 
-        console.error("Load quizzes error:", error);
-        setError(error.message || "Failed to load quizzes.");
-        setQuizzes([]);
+        console.error("Load quiz results error:", error);
+        setError(error.message || "Failed to load quiz results.");
+        setQuizResults([]);
       } finally {
         if (!isCancelled) {
           setLoading(false);
@@ -61,34 +57,49 @@ function QuizList() {
       }
     }
 
-    loadQuizzes();
+    loadQuizResults();
 
     return () => {
       isCancelled = true;
     };
   }, []);
 
-  const filteredQuizzes = useMemo(() => {
-    return quizzes.filter((quiz) => {
+  const filteredResults = useMemo(() => {
+    return quizResults.filter((result) => {
       const keyword = searchKeyword.toLowerCase();
 
       const matchesSearch =
-        quiz.title.toLowerCase().includes(keyword) ||
-        quiz.pet.toLowerCase().includes(keyword) ||
-        quiz.description.toLowerCase().includes(keyword);
+        result.quizTitle.toLowerCase().includes(keyword) ||
+        result.topicTitle.toLowerCase().includes(keyword) ||
+        result.pet.toLowerCase().includes(keyword) ||
+        result.description.toLowerCase().includes(keyword);
 
-      const matchesDifficulty =
-        difficultyFilter === "All" || quiz.difficulty === difficultyFilter;
+      const matchesStatus =
+        statusFilter === "All" ||
+        (statusFilter === "Passed" && result.passed) ||
+        (statusFilter === "Failed" && !result.passed);
 
-      return matchesSearch && matchesDifficulty;
+      return matchesSearch && matchesStatus;
     });
-  }, [quizzes, searchKeyword, difficultyFilter]);
+  }, [quizResults, searchKeyword, statusFilter]);
 
-  function startQuiz(quizId) {
-    navigate(`/petowner/quizzes/${quizId}/attempt`);
+  function goToQuiz(quizID) {
+    navigate(`/petowner/quizzes/${quizID}/attempt`);
   }
 
-  function retryLoadQuizzes() {
+  function formatDate(dateValue) {
+    if (!dateValue) return "-";
+
+    return new Date(dateValue).toLocaleString("en-MY", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function retryLoadResults() {
     window.location.reload();
   }
 
@@ -96,18 +107,18 @@ function QuizList() {
     <div className="admin-page">
       <div className="page-title-row">
         <div className="page-title-area">
-          <p className="page-subtitle">Test Your Knowledge</p>
-          <h1>Available Quizzes</h1>
+          <p className="page-subtitle">Quiz Performance</p>
+          <h1>My Quiz Results</h1>
         </div>
       </div>
 
       <section className="admin-table-card">
         <div className="table-header-row">
           <div>
-            <h2>Pick a Quiz</h2>
+            <h2>Quiz Result History</h2>
             <p className="form-note">
-              Each quiz is tied to a first-aid guide. Pass the quiz to confirm
-              you have learned the key emergency steps.
+              View your completed quiz results from the database. You can also
+              retake a quiz by clicking the button beside each result.
             </p>
           </div>
         </div>
@@ -115,26 +126,25 @@ function QuizList() {
         <div className="filter-row">
           <input
             type="text"
-            placeholder="Search by quiz title or pet..."
+            placeholder="Search by quiz title, topic, or pet..."
             value={searchKeyword}
             onChange={(event) => setSearchKeyword(event.target.value)}
           />
 
           <select
-            value={difficultyFilter}
-            onChange={(event) => setDifficultyFilter(event.target.value)}
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
           >
-            <option value="All">All Difficulty</option>
-            <option value="Beginner">Beginner</option>
-            <option value="Intermediate">Intermediate</option>
-            <option value="Advanced">Advanced</option>
+            <option value="All">All Results</option>
+            <option value="Passed">Passed</option>
+            <option value="Failed">Failed</option>
           </select>
         </div>
 
         {loading && (
           <div className="petowner-empty-state">
             <span className="empty-icon">⏳</span>
-            <p>Loading quizzes...</p>
+            <p>Loading quiz results...</p>
           </div>
         )}
 
@@ -143,58 +153,79 @@ function QuizList() {
             <span className="empty-icon">⚠️</span>
             <p>{error}</p>
 
-            <button className="primary-btn" onClick={retryLoadQuizzes}>
+            <button className="primary-btn" onClick={retryLoadResults}>
               Try Again
             </button>
           </div>
         )}
 
-        {!loading && !error && filteredQuizzes.length > 0 ? (
+        {!loading && !error && filteredResults.length > 0 ? (
           <div className="quiz-list-grid">
-            {filteredQuizzes.map((quiz) => (
-              <article key={quiz.id} className="quiz-card">
+            {filteredResults.map((result) => (
+              <article key={result.resultID} className="quiz-card">
                 <div className="quiz-card-header">
-                  <h3>{quiz.title}</h3>
-                  <span className="status-badge">{quiz.difficulty}</span>
+                  <h3>{result.quizTitle}</h3>
+
+                  <span
+                    className={
+                      result.passed
+                        ? "status-badge published"
+                        : "status-badge archived"
+                    }
+                  >
+                    {result.passed ? "Passed" : "Failed"}
+                  </span>
                 </div>
 
                 <div className="quiz-card-meta-row">
                   <span>
-                    {quiz.petEmoji} <strong>{quiz.pet}</strong>
+                    {result.petEmoji} <strong>{result.pet}</strong>
                   </span>
 
                   <span>
-                    📋 <strong>{quiz.questions}</strong> questions
+                    📚 <strong>{result.topicTitle}</strong>
                   </span>
 
                   <span>
-                    🎯 Pass <strong>{quiz.passingScore}%</strong>
+                    ⚠️ <strong>{result.severity}</strong>
                   </span>
                 </div>
 
-                {quiz.description && (
-                  <p className="form-note" style={{ marginTop: "10px" }}>
-                    {quiz.description}
+                <div className="quiz-card-meta-row" style={{ marginTop: "10px" }}>
+                  <span>
+                    📝 Score: <strong>{result.score}%</strong>
+                  </span>
+
+                  <span>
+                    📋 Questions: <strong>{result.totalQuestions}</strong>
+                  </span>
+
+                  <span>
+                    🎯 Pass Mark: <strong>{result.passingScore}%</strong>
+                  </span>
+                </div>
+
+                <p className="form-note" style={{ marginTop: "10px" }}>
+                  Attempted on: {formatDate(result.attemptedAt)}
+                </p>
+
+                {result.description && (
+                  <p className="form-note" style={{ marginTop: "8px" }}>
+                    {result.description}
                   </p>
                 )}
 
                 <div className="quiz-card-footer">
-                  {quiz.attempted ? (
-                    <span className="quiz-card-best-score">
-                      Best score:{" "}
-                      <strong>
-                        {quiz.bestScore !== null ? `${quiz.bestScore}%` : "-"}
-                      </strong>
-                    </span>
-                  ) : (
-                    <span className="quiz-card-best-score">Not attempted</span>
-                  )}
+                  <span className="quiz-card-best-score">
+                    Result:{" "}
+                    <strong>{result.passed ? "Completed successfully" : "Need more practice"}</strong>
+                  </span>
 
                   <button
                     className="primary-btn"
-                    onClick={() => startQuiz(quiz.id)}
+                    onClick={() => goToQuiz(result.quizID)}
                   >
-                    {quiz.attempted ? "Retry" : "Start"}
+                    Retake Quiz
                   </button>
                 </div>
               </article>
@@ -205,7 +236,10 @@ function QuizList() {
           !error && (
             <div className="petowner-empty-state">
               <span className="empty-icon">🧠</span>
-              <p>No quizzes match your filter.</p>
+              <p>No quiz results found.</p>
+              <p className="form-note">
+                After you complete a quiz, your result will appear here.
+              </p>
             </div>
           )
         )}
