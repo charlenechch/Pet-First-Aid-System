@@ -1235,3 +1235,462 @@
     height: 64px;
   }
 }
+
+/*PET OWNER DASHBOARD */
+
+/* Page spacing */
+.petowner-layout .admin-page {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Hero section */
+.petowner-hero {
+  background: linear-gradient(135deg, #fff3e8 0%, #fffaf4 100%);
+  border: 1px solid #f1d6c0;
+  border-radius: 24px;
+  padding: 34px 38px;
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 14px 34px rgba(92, 65, 43, 0.06);
+}
+
+.petowner-hero-text {
+  min-width: 0;
+}
+
+.petowner-hero-text h2 {
+  margin: 4px 0 8px;
+  font-family: "Playfair Display", serif;
+  font-size: 28px;
+  line-height: 1.2;
+  color: #5d341f;
+}
+
+.petowner-hero-text p {
+  margin: 0;
+  color: #7a4d34;
+  max-width: 560px;
+  font-size: 15.5px;
+  line-height: 1.55;
+}
+
+.petowner-hero .page-subtitle {
+  margin: 0;
+  color: #7a4d34;
+  font-weight: 700;
+}
+
+.petowner-hero-pets {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.petowner-hero-pet-pill {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid #f1d6c0;
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: #6b3a1f;
+  font-weight: 700;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* Stats cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+  max-width: 900px;
+}
+
+.stats-grid .admin-stat-card {
+  min-height: 138px;
+  background: #ffffff;
+  border: 1px solid #e5e2dc;
+  border-radius: 18px;
+  padding: 24px 22px;
+  box-shadow: 0 10px 28px rgba(37, 48, 41, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.stats-grid .admin-stat-card .stat-icon {
+  font-size: 28px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.stats-grid .admin-stat-card h3 {
+  margin: 0 0 6px;
+  font-family: "Playfair Display", serif;
+  font-size: 26px;
+  line-height: 1;
+  color: #143b28;
+}
+
+.stats-grid .admin-stat-card p {
+  margin: 0;
+  color: #6f7c73;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Dashboard cards layout */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: stretch;
+}
+
+/* Card base */
+.dashboard-grid .admin-table-card {
+  background: #ffffff;
+  border: 1px solid #e5e2dc;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 10px 28px rgba(37, 48, 41, 0.04);
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header in cards */
+.dashboard-grid .table-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dashboard-grid .table-header-row h2 {
+  margin: 0 0 10px;
+  font-family: "Playfair Display", serif;
+  font-size: 26px;
+  line-height: 1.2;
+  color: #143b28;
+}
+
+.dashboard-grid .table-header-row .form-note {
+  margin: 0;
+  color: #6f7c73;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+/* Buttons inside dashboard card header */
+.dashboard-grid .secondary-btn,
+.dashboard-grid .primary-btn {
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dashboard-grid .secondary-btn {
+  background: #f4f1ec;
+  color: #143b28;
+  border: none;
+}
+
+.dashboard-grid .secondary-btn:hover {
+  background: #e8f4df;
+}
+
+/* Remove horizontal scrollbar issue */
+.dashboard-grid .table-responsive {
+  width: 100%;
+  overflow-x: visible;
+}
+
+/* Table general */
+.dashboard-grid .admin-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.dashboard-grid .admin-table thead th {
+  padding: 14px 12px 16px;
+  border-bottom: 1px solid #ebe8e2;
+  color: #143b28;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dashboard-grid .admin-table tbody td {
+  padding: 18px 12px;
+  border-bottom: 1px solid #f1eee8;
+  color: #14261d;
+  font-size: 14.5px;
+  line-height: 1.45;
+  vertical-align: middle;
+}
+
+.dashboard-grid .admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Topic title / quiz title */
+.dashboard-grid .cell-title {
+  display: block;
+  color: #081a12;
+  font-weight: 800;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* Saved topics table columns */
+.dashboard-grid > .admin-table-card:nth-child(1) .admin-table th:nth-child(1),
+.dashboard-grid > .admin-table-card:nth-child(1) .admin-table td:nth-child(1) {
+  width: 46%;
+}
+
+.dashboard-grid > .admin-table-card:nth-child(1) .admin-table th:nth-child(2),
+.dashboard-grid > .admin-table-card:nth-child(1) .admin-table td:nth-child(2) {
+  width: 24%;
+}
+
+.dashboard-grid > .admin-table-card:nth-child(1) .admin-table th:nth-child(3),
+.dashboard-grid > .admin-table-card:nth-child(1) .admin-table td:nth-child(3) {
+  width: 30%;
+}
+
+/* Recent quiz attempts table columns */
+.dashboard-grid > .admin-table-card:nth-child(2) .admin-table th:nth-child(1),
+.dashboard-grid > .admin-table-card:nth-child(2) .admin-table td:nth-child(1) {
+  width: 42%;
+}
+
+.dashboard-grid > .admin-table-card:nth-child(2) .admin-table th:nth-child(2),
+.dashboard-grid > .admin-table-card:nth-child(2) .admin-table td:nth-child(2) {
+  width: 16%;
+  text-align: center;
+}
+
+.dashboard-grid > .admin-table-card:nth-child(2) .admin-table th:nth-child(3),
+.dashboard-grid > .admin-table-card:nth-child(2) .admin-table td:nth-child(3) {
+  width: 20%;
+  text-align: center;
+}
+
+.dashboard-grid > .admin-table-card:nth-child(2) .admin-table th:nth-child(4),
+.dashboard-grid > .admin-table-card:nth-child(2) .admin-table td:nth-child(4) {
+  width: 22%;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Badges */
+.dashboard-grid .severity-badge,
+.dashboard-grid .status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.dashboard-grid .severity-badge.critical {
+  background: #fff1ee;
+  color: #b6533f;
+}
+
+.dashboard-grid .severity-badge.high {
+  background: #fff5dc;
+  color: #9a5b00;
+}
+
+.dashboard-grid .severity-badge.moderate {
+  background: #eaf3de;
+  color: #3b6d11;
+}
+
+.dashboard-grid .severity-badge.low {
+  background: #edf6ff;
+  color: #2f5f85;
+}
+
+.dashboard-grid .status-badge {
+  background: #eaf3de;
+  color: #3b6d11;
+}
+
+.dashboard-grid .status-badge.draft,
+.dashboard-grid .status-badge.archived {
+  background: #fff5dc;
+  color: #8a5b00;
+}
+
+/* Empty state */
+.petowner-empty-state {
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  color: #6f7c73;
+  padding: 28px;
+}
+
+.petowner-empty-state .empty-icon {
+  font-size: 34px;
+}
+
+.petowner-empty-state p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Dashboard responsive */
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .petowner-hero {
+    align-items: flex-start;
+    padding: 28px;
+  }
+
+  .petowner-hero-pets {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .petowner-hero {
+    padding: 24px;
+    border-radius: 18px;
+  }
+
+  .petowner-hero-text h2 {
+    font-size: 24px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid .admin-table-card {
+    padding: 22px;
+  }
+
+  .dashboard-grid .table-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-grid .secondary-btn,
+  .dashboard-grid .primary-btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* On small screen, make table become neat stacked rows */
+  .dashboard-grid .admin-table,
+  .dashboard-grid .admin-table thead,
+  .dashboard-grid .admin-table tbody,
+  .dashboard-grid .admin-table th,
+  .dashboard-grid .admin-table td,
+  .dashboard-grid .admin-table tr {
+    display: block;
+    width: 100% !important;
+  }
+
+  .dashboard-grid .admin-table thead {
+    display: none;
+  }
+
+  .dashboard-grid .admin-table tbody tr {
+    border: 1px solid #eee9e2;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 14px;
+    background: #ffffff;
+  }
+
+  .dashboard-grid .admin-table tbody td {
+    border-bottom: none;
+    padding: 8px 0;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+
+  .dashboard-grid .admin-table tbody td::before {
+    display: block;
+    margin-bottom: 4px;
+    color: #6f7c73;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .dashboard-grid > .admin-table-card:nth-child(1) .admin-table tbody td:nth-child(1)::before {
+    content: "Topic";
+  }
+
+  .dashboard-grid > .admin-table-card:nth-child(1) .admin-table tbody td:nth-child(2)::before {
+    content: "Pet";
+  }
+
+  .dashboard-grid > .admin-table-card:nth-child(1) .admin-table tbody td:nth-child(3)::before {
+    content: "Severity";
+  }
+
+  .dashboard-grid > .admin-table-card:nth-child(2) .admin-table tbody td:nth-child(1)::before {
+    content: "Quiz";
+  }
+
+  .dashboard-grid > .admin-table-card:nth-child(2) .admin-table tbody td:nth-child(2)::before {
+    content: "Score";
+  }
+
+  .dashboard-grid > .admin-table-card:nth-child(2) .admin-table tbody td:nth-child(3)::before {
+    content: "Result";
+  }
+
+  .dashboard-grid > .admin-table-card:nth-child(2) .admin-table tbody td:nth-child(4)::before {
+    content: "Attempted";
+  }
+}
