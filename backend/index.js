@@ -355,7 +355,7 @@ app.get("/api/emergency-topics/:emergencyID", async (req, res) => {
 // If email matches registered user, link to that userID
 app.post("/api/public/feedback", async (req, res) => {
   try {
-    const { name, email, category, rating, message } = req.body;
+    const { name, email, category, emergencyID, rating, message } = req.body;
 
     if (!name || !email || !category || !rating || !message) {
       return res.status(400).json({
@@ -387,7 +387,7 @@ app.post("/api/public/feedback", async (req, res) => {
 
     const linkedUserID = users.length > 0 ? users[0].userID : null;
 
-    await pool.query(
+    const [result] = await pool.query(
       `
       INSERT INTO feedback
       (
@@ -404,13 +404,13 @@ app.post("/api/public/feedback", async (req, res) => {
       `,
       [
         linkedUserID,
-        null,
+        emergencyID ? Number(emergencyID) : null,
         name.trim(),
         email.trim(),
         category,
         Number(rating),
         message.trim(),
-        "Pending",
+        "new",
       ]
     );
 
@@ -419,6 +419,7 @@ app.post("/api/public/feedback", async (req, res) => {
         ? "Feedback submitted and linked to your account."
         : "Feedback submitted successfully.",
       linkedToAccount: Boolean(linkedUserID),
+      feedbackID: result.insertId,
     });
   } catch (error) {
     console.error("Public feedback error:", error);

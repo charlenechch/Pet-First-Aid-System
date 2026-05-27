@@ -32,13 +32,53 @@ export default function EmergencySearch() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const resultsRef = useRef(null);
+  const toastTimerRef = useRef(null);
 
   const [guides, setGuides] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
+  const [updatingBookmarkId, setUpdatingBookmarkId] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Load emergency topics from backend safely
+  const [toast, setToast] = useState({
+    show: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  function showToast(type, title, message) {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+
+    setToast({
+      show: true,
+      type,
+      title,
+      message,
+    });
+
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast((prev) => ({
+        ...prev,
+        show: false,
+      }));
+    }, 2600);
+  }
+
+  function closeToast() {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+
+    setToast((prev) => ({
+      ...prev,
+      show: false,
+    }));
+  }
+
   useEffect(() => {
     let isCancelled = false;
 
@@ -58,8 +98,6 @@ export default function EmergencySearch() {
           query.append("severity", severity);
         }
 
-        console.log("Loading emergency topics with query:", query.toString());
-
         const data = await apiRequest(
           `/api/emergency-topics?${query.toString()}`
         );
@@ -76,8 +114,6 @@ export default function EmergencySearch() {
           desc: topic.topicDesc || "",
           color: "",
         }));
-
-        console.log("Emergency topics loaded:", formattedGuides);
 
         setGuides(formattedGuides);
         setError("");
@@ -101,19 +137,13 @@ export default function EmergencySearch() {
     };
   }, [pet, severity, search]);
 
-  // Load user's bookmarks safely
   useEffect(() => {
     let isCancelled = false;
 
     async function loadBookmarks() {
       const token = getToken();
 
-      if (!token) {
-        if (!isCancelled) {
-          setBookmarks([]);
-        }
-        return;
-      }
+      if (!token) return;
 
       try {
         const data = await apiRequest("/api/petowner/bookmarks");
@@ -123,8 +153,6 @@ export default function EmergencySearch() {
         const bookmarkIds = (data.bookmarks || []).map((item) =>
           String(item.emergencyID)
         );
-
-        console.log("Bookmarks loaded:", bookmarkIds);
 
         setBookmarks(bookmarkIds);
       } catch (error) {
@@ -138,6 +166,14 @@ export default function EmergencySearch() {
 
     return () => {
       isCancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
     };
   }, []);
 
@@ -166,27 +202,41 @@ export default function EmergencySearch() {
     setSearch("");
     setCurrentPage(1);
   };
-const retryLoadTopics = () => {
-  window.location.reload();
-};
 
-  const toggleBookmark = async (id) => {
+  const retryLoadTopics = () => {
+    window.location.reload();
+  };
+
+  const toggleBookmark = async (id, title = "this guide") => {
     const token = getToken();
 
     if (!token) {
-      alert("Please login as pet owner before bookmarking.");
+      showToast(
+        "warning",
+        "Login required",
+        "Please login as pet owner before bookmarking guides."
+      );
       return;
     }
 
     const bookmarkId = String(id);
+    const isBookmarked = bookmarks.includes(bookmarkId);
 
     try {
-      if (bookmarks.includes(bookmarkId)) {
+      setUpdatingBookmarkId(bookmarkId);
+
+      if (isBookmarked) {
         await apiRequest(`/api/petowner/bookmarks/${id}`, {
           method: "DELETE",
         });
 
         setBookmarks((prev) => prev.filter((item) => item !== bookmarkId));
+
+        showToast(
+          "info",
+          "Bookmark removed",
+          `${title} has been removed from your saved guides.`
+        );
       } else {
         await apiRequest("/api/petowner/bookmarks", {
           method: "POST",
@@ -196,10 +246,23 @@ const retryLoadTopics = () => {
         });
 
         setBookmarks((prev) => [...prev, bookmarkId]);
+
+        showToast(
+          "success",
+          "Bookmark saved",
+          `${title} has been added to your saved guides.`
+        );
       }
     } catch (error) {
       console.error("Toggle bookmark error:", error);
-      alert(error.message || "Failed to update bookmark.");
+
+      showToast(
+        "error",
+        "Bookmark failed",
+        error.message || "Failed to update bookmark. Please try again."
+      );
+    } finally {
+      setUpdatingBookmarkId(null);
     }
   };
 
@@ -273,16 +336,41 @@ const retryLoadTopics = () => {
 
   return (
     <main className="search-page">
-      {/* HERO */}
+      {toast.show && (
+        <div className={`bookmark-toast ${toast.type}`}>
+          <div className="bookmark-toast-icon">
+            {toast.type === "success"
+              ? "✓"
+              : toast.type === "error"
+              ? "!"
+              : toast.type === "warning"
+              ? "⚠"
+              : "★"}
+          </div>
+
+          <div className="bookmark-toast-content">
+            <strong>{toast.title}</strong>
+            <span>{toast.message}</span>
+          </div>
+
+          <button
+            type="button"
+            className="bookmark-toast-close"
+            onClick={closeToast}
+            aria-label="Close notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <section className="search-hero">
         <p className="search-label">Guides & Emergency Search</p>
         <h1>Find the right first-aid guide fast</h1>
         <p>Filter by pet type, severity level, or search by keyword.</p>
       </section>
 
-      {/* FILTERS */}
       <section className="search-filter-card">
-        {/* Pet filter */}
         <div className="search-filter-group">
           <p className="search-filter-label">Pet type</p>
 
@@ -290,6 +378,7 @@ const retryLoadTopics = () => {
             {PETS.map((p) => (
               <button
                 key={p}
+                type="button"
                 className={`search-pet-pill ${pet === p ? "active" : ""}`}
                 onClick={() => handlePetChange(p)}
               >
@@ -299,7 +388,6 @@ const retryLoadTopics = () => {
           </div>
         </div>
 
-        {/* Severity filter */}
         <div className="search-filter-group">
           <p className="search-filter-label">Severity</p>
 
@@ -311,6 +399,7 @@ const retryLoadTopics = () => {
               return (
                 <button
                   key={s}
+                  type="button"
                   className={`search-sev-pill ${isActive ? "active" : ""}`}
                   style={
                     isActive
@@ -330,7 +419,6 @@ const retryLoadTopics = () => {
           </div>
         </div>
 
-        {/* Keyword search */}
         <div className="search-filter-group">
           <p className="search-filter-label">Search keyword</p>
 
@@ -356,11 +444,12 @@ const retryLoadTopics = () => {
                 className="search-input"
                 placeholder="e.g. choking, poison, bleeding..."
                 value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
+                onChange={(event) => handleSearchChange(event.target.value)}
               />
 
               {search && (
                 <button
+                  type="button"
                   className="search-input-clear"
                   onClick={() => handleSearchChange("")}
                 >
@@ -381,9 +470,7 @@ const retryLoadTopics = () => {
               <span
                 key={item}
                 className={search === item ? "active" : ""}
-                onClick={() =>
-                  handleSearchChange(search === item ? "" : item)
-                }
+                onClick={() => handleSearchChange(search === item ? "" : item)}
               >
                 {item}
               </span>
@@ -391,14 +478,13 @@ const retryLoadTopics = () => {
           </div>
         </div>
 
-        {/* Active filters + clear */}
         {hasFilters && (
           <div className="search-active-row">
             <div className="search-active-filters">
               {pet !== "All Pets" && (
                 <span className="search-active-tag">
                   {PET_ICONS[pet]} {pet}
-                  <button onClick={() => handlePetChange("All Pets")}>
+                  <button type="button" onClick={() => handlePetChange("All Pets")}>
                     ✕
                   </button>
                 </span>
@@ -408,6 +494,7 @@ const retryLoadTopics = () => {
                 <span className="search-active-tag">
                   {severity}
                   <button
+                    type="button"
                     onClick={() => handleSeverityChange("All Severity")}
                   >
                     ✕
@@ -418,19 +505,20 @@ const retryLoadTopics = () => {
               {search && (
                 <span className="search-active-tag">
                   "{search}"
-                  <button onClick={() => handleSearchChange("")}>✕</button>
+                  <button type="button" onClick={() => handleSearchChange("")}>
+                    ✕
+                  </button>
                 </span>
               )}
             </div>
 
-            <button className="search-clear-all" onClick={clearSearch}>
+            <button type="button" className="search-clear-all" onClick={clearSearch}>
               Clear all
             </button>
           </div>
         )}
       </section>
 
-      {/* RESULTS */}
       <section className="search-results" ref={resultsRef}>
         <div className="search-results-header">
           <h2>
@@ -446,10 +534,7 @@ const retryLoadTopics = () => {
           {!loading && filteredGuides.length > 0 && (
             <p className="search-results-meta">
               Showing {(currentPage - 1) * GUIDES_PER_PAGE + 1}–
-              {Math.min(
-                currentPage * GUIDES_PER_PAGE,
-                filteredGuides.length
-              )}{" "}
+              {Math.min(currentPage * GUIDES_PER_PAGE, filteredGuides.length)}{" "}
               of {filteredGuides.length}
             </p>
           )}
@@ -461,7 +546,7 @@ const retryLoadTopics = () => {
             <h3>Unable to load guides</h3>
             <p>{error}</p>
 
-            <button className="search-empty-btn" onClick={retryLoadTopics}>
+            <button type="button" className="search-empty-btn" onClick={retryLoadTopics}>
               Try again
             </button>
           </div>
@@ -478,63 +563,74 @@ const retryLoadTopics = () => {
         {!error && !loading && filteredGuides.length > 0 ? (
           <>
             <div className="search-result-grid">
-              {pagedGuides.map((guide) => (
-                <div
-                  className={`search-result-card ${guide.color}`}
-                  key={guide.id}
-                >
-                  <div className="search-card-top">
-                    <span className="search-card-icon">{guide.icon}</span>
+              {pagedGuides.map((guide) => {
+                const guideId = String(guide.id);
+                const isBookmarked = bookmarks.includes(guideId);
+                const isUpdating = updatingBookmarkId === guideId;
 
-                    <button
-                      className={`bookmark-btn ${
-                        bookmarks.includes(String(guide.id))
-                          ? "bookmarked"
-                          : ""
-                      }`}
-                      onClick={() => toggleBookmark(guide.id)}
-                      aria-label="Bookmark"
-                    >
-                      {bookmarks.includes(String(guide.id)) ? "★" : "☆"}
-                    </button>
-                  </div>
-
-                  <h3>{guide.title}</h3>
-
-                  <div className="search-card-meta">
-                    <span className="search-card-pet">{guide.pet}</span>
-
-                    <span
-                      className="search-card-severity"
-                      style={{
-                        background:
-                          SEVERITY_STYLES[guide.severity]?.bg || "#f3f4f6",
-                        color:
-                          SEVERITY_STYLES[guide.severity]?.color || "#6b7280",
-                      }}
-                    >
-                      {guide.severity}
-                    </span>
-                  </div>
-
-                  {guide.desc && (
-                    <p className="search-card-desc">{guide.desc}</p>
-                  )}
-
-                  <Link
-                    to={`/guide-details/${guide.id}`}
-                    className="search-card-btn"
+                return (
+                  <div
+                    className={`search-result-card ${guide.color}`}
+                    key={guide.id}
                   >
-                    View guide →
-                  </Link>
-                </div>
-              ))}
+                    <div className="search-card-top">
+                      <span className="search-card-icon">{guide.icon}</span>
+
+                      <button
+                        type="button"
+                        className={`bookmark-btn ${
+                          isBookmarked ? "bookmarked" : ""
+                        } ${isUpdating ? "updating" : ""}`}
+                        onClick={() => toggleBookmark(guide.id, guide.title)}
+                        aria-label={
+                          isBookmarked ? "Remove bookmark" : "Add bookmark"
+                        }
+                        disabled={isUpdating}
+                        title={
+                          isBookmarked ? "Remove bookmark" : "Save bookmark"
+                        }
+                      >
+                        {isUpdating ? "…" : isBookmarked ? "★" : "☆"}
+                      </button>
+                    </div>
+
+                    <h3>{guide.title}</h3>
+
+                    <div className="search-card-meta">
+                      <span className="search-card-pet">{guide.pet}</span>
+
+                      <span
+                        className="search-card-severity"
+                        style={{
+                          background:
+                            SEVERITY_STYLES[guide.severity]?.bg || "#f3f4f6",
+                          color:
+                            SEVERITY_STYLES[guide.severity]?.color || "#6b7280",
+                        }}
+                      >
+                        {guide.severity}
+                      </span>
+                    </div>
+
+                    {guide.desc && (
+                      <p className="search-card-desc">{guide.desc}</p>
+                    )}
+
+                    <Link
+                      to={`/guide-details/${guide.id}`}
+                      className="search-card-btn"
+                    >
+                      View guide →
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* PAGINATION */}
             {totalPages > 1 && (
               <div className="search-pagination">
                 <button
+                  type="button"
                   className="search-page-btn search-page-nav"
                   onClick={() => goToPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
@@ -543,10 +639,10 @@ const retryLoadTopics = () => {
                 </button>
 
                 <div className="search-page-numbers">
-                  {getPageNumbers().map((page, i) =>
+                  {getPageNumbers().map((page, index) =>
                     page === "..." ? (
                       <span
-                        key={`ellipsis-${i}`}
+                        key={`ellipsis-${index}`}
                         className="search-page-ellipsis"
                       >
                         ...
@@ -554,6 +650,7 @@ const retryLoadTopics = () => {
                     ) : (
                       <button
                         key={page}
+                        type="button"
                         className={`search-page-btn ${
                           currentPage === page ? "active" : ""
                         }`}
@@ -566,6 +663,7 @@ const retryLoadTopics = () => {
                 </div>
 
                 <button
+                  type="button"
                   className="search-page-btn search-page-nav"
                   onClick={() =>
                     goToPage(Math.min(totalPages, currentPage + 1))
@@ -585,7 +683,7 @@ const retryLoadTopics = () => {
               <h3>No guide found</h3>
               <p>Try a different keyword or reset your filters.</p>
 
-              <button className="search-empty-btn" onClick={clearSearch}>
+              <button type="button" className="search-empty-btn" onClick={clearSearch}>
                 Reset filters
               </button>
             </div>

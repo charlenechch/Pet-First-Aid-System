@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiRequest, getToken } from "../../api";
 
 const GUIDES_PER_PAGE = 5;
@@ -17,6 +17,17 @@ export default function GuideDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [updatingBookmark, setUpdatingBookmark] = useState(false);
+
+  const toastTimerRef = useRef(null);
+
+  const [toast, setToast] = useState({
+    show: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
   const petCategoryMap = {
     dog: { label: "Dog", emoji: "🐶" },
     cat: { label: "Cat", emoji: "🐱" },
@@ -26,14 +37,42 @@ export default function GuideDetails() {
     fish: { label: "Fish", emoji: "🐟" },
   };
 
-  // Load current guide details from backend
+  function showToast(type, title, message) {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+
+    setToast({
+      show: true,
+      type,
+      title,
+      message,
+    });
+
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast((prev) => ({
+        ...prev,
+        show: false,
+      }));
+    }, 2600);
+  }
+
+  function closeToast() {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+
+    setToast((prev) => ({
+      ...prev,
+      show: false,
+    }));
+  }
+
   useEffect(() => {
     let isCancelled = false;
 
     async function loadGuideDetails() {
       try {
-        console.log("Loading guide details ID:", id);
-
         const data = await apiRequest(`/api/emergency-topics/${id}`);
 
         if (isCancelled) return;
@@ -61,8 +100,6 @@ export default function GuideDetails() {
             "Please contact a veterinarian immediately for professional advice.",
         };
 
-        console.log("Guide details loaded:", formattedGuide);
-
         setGuide(formattedGuide);
         setError("");
       } catch (error) {
@@ -85,7 +122,6 @@ export default function GuideDetails() {
     };
   }, [id]);
 
-  // Load other guides from backend
   useEffect(() => {
     let isCancelled = false;
 
@@ -105,8 +141,6 @@ export default function GuideDetails() {
             severity: topic.severity,
           }));
 
-        console.log("Other guides loaded:", formattedGuides);
-
         setOtherGuides(formattedGuides);
       } catch (error) {
         if (isCancelled) return;
@@ -122,19 +156,13 @@ export default function GuideDetails() {
     };
   }, [id]);
 
-  // Load bookmark status from backend
   useEffect(() => {
     let isCancelled = false;
 
     async function loadBookmarks() {
       const token = getToken();
 
-      if (!token) {
-        if (!isCancelled) {
-          setBookmarks([]);
-        }
-        return;
-      }
+      if (!token) return;
 
       try {
         const data = await apiRequest("/api/petowner/bookmarks");
@@ -144,8 +172,6 @@ export default function GuideDetails() {
         const bookmarkIds = (data.bookmarks || []).map((item) =>
           String(item.emergencyID)
         );
-
-        console.log("Bookmarks loaded in guide details:", bookmarkIds);
 
         setBookmarks(bookmarkIds);
       } catch (error) {
@@ -162,25 +188,46 @@ export default function GuideDetails() {
     };
   }, []);
 
-  const toggleBookmark = async () => {
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  async function toggleBookmark() {
     const token = getToken();
 
     if (!token) {
-      alert("Please login as pet owner before bookmarking.");
+      showToast(
+        "warning",
+        "Login required",
+        "Please login as pet owner before bookmarking this guide."
+      );
       return;
     }
 
-    if (!guide) return;
+    if (!guide || updatingBookmark) return;
 
     const guideId = String(guide.id);
+    const isBookmarked = bookmarks.includes(guideId);
 
     try {
-      if (bookmarks.includes(guideId)) {
+      setUpdatingBookmark(true);
+
+      if (isBookmarked) {
         await apiRequest(`/api/petowner/bookmarks/${guideId}`, {
           method: "DELETE",
         });
 
         setBookmarks((prev) => prev.filter((item) => item !== guideId));
+
+        showToast(
+          "info",
+          "Bookmark removed",
+          `${guide.title} has been removed from your saved guides.`
+        );
       } else {
         await apiRequest("/api/petowner/bookmarks", {
           method: "POST",
@@ -190,16 +237,29 @@ export default function GuideDetails() {
         });
 
         setBookmarks((prev) => [...prev, guideId]);
+
+        showToast(
+          "success",
+          "Bookmark saved",
+          `${guide.title} has been added to your saved guides.`
+        );
       }
     } catch (error) {
       console.error("Toggle bookmark error:", error);
-      alert(error.message || "Failed to update bookmark.");
-    }
-  };
 
-  const retryLoadGuide = () => {
+      showToast(
+        "error",
+        "Bookmark failed",
+        error.message || "Failed to update bookmark. Please try again."
+      );
+    } finally {
+      setUpdatingBookmark(false);
+    }
+  }
+
+  function retryLoadGuide() {
     window.location.reload();
-  };
+  }
 
   if (loading) {
     return (
@@ -241,8 +301,8 @@ export default function GuideDetails() {
     ? guide.pet
     : String(guide.pet)
         .split(/[,/]/)
-        .map((p) => p.trim().toLowerCase())
-        .filter((p) => p !== "");
+        .map((pet) => pet.trim().toLowerCase())
+        .filter((pet) => pet !== "");
 
   const totalPages = Math.max(
     1,
@@ -256,7 +316,34 @@ export default function GuideDetails() {
 
   return (
     <main className="guide-page">
-      {/* BREADCRUMB */}
+      {toast.show && (
+        <div className={`bookmark-toast ${toast.type}`}>
+          <div className="bookmark-toast-icon">
+            {toast.type === "success"
+              ? "✓"
+              : toast.type === "error"
+              ? "!"
+              : toast.type === "warning"
+              ? "⚠"
+              : "★"}
+          </div>
+
+          <div className="bookmark-toast-content">
+            <strong>{toast.title}</strong>
+            <span>{toast.message}</span>
+          </div>
+
+          <button
+            type="button"
+            className="bookmark-toast-close"
+            onClick={closeToast}
+            aria-label="Close notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <nav className="guide-breadcrumb">
         <Link to="/">Home</Link>
         <span className="guide-breadcrumb-sep">›</span>
@@ -265,12 +352,20 @@ export default function GuideDetails() {
         <span className="guide-breadcrumb-current">{guide.title}</span>
       </nav>
 
-      {/* HERO */}
       <section className="guide-hero">
         <span>{guide.severity} Emergency</span>
 
-        <button className="guide-bookmark-btn" onClick={toggleBookmark}>
-          {isBookmarked ? "★ Bookmarked" : "☆ Bookmark"}
+        <button
+          type="button"
+          className={`guide-bookmark-btn ${isBookmarked ? "bookmarked" : ""}`}
+          onClick={toggleBookmark}
+          disabled={updatingBookmark}
+        >
+          {updatingBookmark
+            ? "Updating..."
+            : isBookmarked
+            ? "★ Bookmarked"
+            : "☆ Bookmark"}
         </button>
 
         <h1>
@@ -302,7 +397,6 @@ export default function GuideDetails() {
 
       <section className="guide-layout">
         <div className="guide-steps-card">
-          {/* EMERGENCY ALERT BANNER */}
           {guide.severity === "Critical" && (
             <div className="guide-alert-banner">
               <div className="guide-alert-left">
@@ -318,7 +412,6 @@ export default function GuideDetails() {
             </div>
           )}
 
-          {/* SIGNS SECTION */}
           {guide.signs && guide.signs.length > 0 && (
             <div className="guide-signs-section">
               <h2>
@@ -327,8 +420,8 @@ export default function GuideDetails() {
               </h2>
 
               <div className="guide-signs-grid">
-                {guide.signs.map((sign, i) => (
-                  <div className="guide-sign-chip" key={i}>
+                {guide.signs.map((sign, index) => (
+                  <div className="guide-sign-chip" key={index}>
                     🚨 {sign}
                   </div>
                 ))}
@@ -336,7 +429,6 @@ export default function GuideDetails() {
             </div>
           )}
 
-          {/* STEPS */}
           <h2>Step-by-step first-aid</h2>
 
           {guide.steps && guide.steps.length > 0 ? (
@@ -352,12 +444,10 @@ export default function GuideDetails() {
             </p>
           )}
 
-          {/* VIDEO BOX */}
           <div className="guide-video-box">
             ▶️ Video / Image Guide Placeholder
           </div>
 
-          {/* FEEDBACK */}
           <div className="guide-feedback-box">
             <p className="guide-feedback-title">Was this guide helpful?</p>
 
@@ -387,9 +477,7 @@ export default function GuideDetails() {
           </div>
         </div>
 
-        {/* SIDEBAR */}
         <aside className="guide-side-card">
-          {/* VET ADVICE */}
           <h3>Vet Advice</h3>
           <p>{guide.advice}</p>
 
@@ -398,7 +486,6 @@ export default function GuideDetails() {
             <strong>+60 12-345 6789</strong>
           </div>
 
-          {/* OTHER GUIDES WITH PAGINATION */}
           <div className="guide-pagination-section">
             <div className="guide-pagination-header">
               <h3>Other Guides</h3>
@@ -410,21 +497,27 @@ export default function GuideDetails() {
 
             <div className="guide-pagination-list">
               {pagedGuides.length > 0 ? (
-                pagedGuides.map((g) => (
+                pagedGuides.map((otherGuide) => (
                   <Link
-                    key={g.id}
-                    to={`/guide-details/${g.id}`}
+                    key={otherGuide.id}
+                    to={`/guide-details/${otherGuide.id}`}
                     className="guide-pagination-item"
                     onClick={() => {
                       setCurrentPage(1);
                       setFeedback(null);
                     }}
                   >
-                    <span className="guide-pagination-icon">{g.icon}</span>
+                    <span className="guide-pagination-icon">
+                      {otherGuide.icon}
+                    </span>
 
                     <div className="guide-pagination-info">
-                      <p className="guide-pagination-title">{g.title}</p>
-                      <p className="guide-pagination-severity">{g.severity}</p>
+                      <p className="guide-pagination-title">
+                        {otherGuide.title}
+                      </p>
+                      <p className="guide-pagination-severity">
+                        {otherGuide.severity}
+                      </p>
                     </div>
 
                     <span className="guide-pagination-arrow">›</span>
@@ -435,20 +528,17 @@ export default function GuideDetails() {
               )}
             </div>
 
-            {/* PAGE NUMBERS */}
             {totalPages > 1 && (
               <div className="guide-pagination-controls">
                 <button
                   className="guide-page-btn"
-                  onClick={() =>
-                    setCurrentPage((p) => Math.max(1, p - 1))
-                  }
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                   disabled={currentPage === 1}
                 >
                   ‹
                 </button>
 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map(
                   (page) => (
                     <button
                       key={page}
@@ -465,7 +555,7 @@ export default function GuideDetails() {
                 <button
                   className="guide-page-btn"
                   onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    setCurrentPage((page) => Math.min(totalPages, page + 1))
                   }
                   disabled={currentPage === totalPages}
                 >

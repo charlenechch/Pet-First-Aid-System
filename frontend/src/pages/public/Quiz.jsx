@@ -352,36 +352,30 @@ export default function Quiz() {
 
   if (!token) {
     return (
-      <main className="qz-select-page">
-        <div className="qz-select-header">
-          <h1>Quizzes</h1>
-          <p>Test your pet first-aid knowledge and track your progress</p>
-          <p style={{ marginTop: 8, fontSize: 14, color: "#666" }}>
-            <Link to="/login" style={{ color: "#2d6a4f", fontWeight: 600 }}>
-              Login
-            </Link>{" "}
-            to take a quiz
-          </p>
-        </div>
+     <main className="qz-login-required-page">
+  <section className="qz-login-required-card">
+    <div className="qz-login-required-icon">🔐</div>
 
-        <div className="qz-select-grid">
-          <div
-            style={{
-              gridColumn: "1/-1",
-              textAlign: "center",
-              padding: "3rem 0",
-            }}
-          >
-            <p style={{ fontSize: 16, color: "#666" }}>
-              Please{" "}
-              <Link to="/login" style={{ color: "#2d6a4f", fontWeight: 600 }}>
-                login
-              </Link>{" "}
-              to view and take quizzes.
-            </p>
-          </div>
-        </div>
-      </main>
+    <p className="qz-login-required-label">Login Required</p>
+
+    <h1>Login to Take Quizzes</h1>
+
+    <p className="qz-login-required-text">
+      Quizzes are only available for registered pet owners. Please login first
+      so your quiz results can be saved to your profile.
+    </p>
+
+    <div className="qz-login-required-actions">
+      <Link to="/login" className="qz-login-required-primary">
+        Login Now
+      </Link>
+
+      <Link to="/register" className="qz-login-required-secondary">
+        Create Account
+      </Link>
+    </div>
+  </section>
+</main>
     );
   }
 
