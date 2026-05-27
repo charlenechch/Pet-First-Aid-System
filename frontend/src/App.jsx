@@ -69,6 +69,7 @@ function App() {
         <Route path="/guide-details/:id" element={<GuideDetails />} />
         <Route path="/feedback" element={<PublicFeedback />} />
         <Route path="/quiz" element={<Quiz />} />
+        <Route path="/quiz/:quizId" element={<Quiz />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

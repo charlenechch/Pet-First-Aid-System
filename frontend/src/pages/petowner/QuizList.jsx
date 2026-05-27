@@ -74,9 +74,8 @@ function QuizList() {
       return matchesSearch && matchesStatus;
     });
   }, [quizResults, searchKeyword, statusFilter]);
-
-function goToPublicQuizPage() {
-  navigate("/quiz");
+function goToPublicQuizPage(quizID) {
+  navigate(`/quiz/${quizID}`);
 }
   function formatDate(dateValue) {
     if (!dateValue) return "-";
@@ -185,12 +184,12 @@ function goToPublicQuizPage() {
                 </div>
 
                 <button
-                type="button"
-                className="primary-btn quiz-result-link-btn"
-                onClick={goToPublicQuizPage}
-              >
-                Go to Quiz Page
-              </button>
+  type="button"
+  className="primary-btn quiz-result-link-btn"
+  onClick={() => goToPublicQuizPage(result.quizID)}
+>
+  Go to This Quiz
+</button>
               </article>
             ))}
           </div>
