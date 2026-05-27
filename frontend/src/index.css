@@ -5768,3 +5768,36 @@ a {
   object-fit: cover;
   border-radius: 16px;
 }
+
+/* Make guide detail images show fully, not cropped */
+.guide-media-image {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+  display: block;
+  border-radius: 16px;
+  background: #f8f5ef;
+}
+
+/* Make the media card fit the full image nicely */
+.guide-media-card {
+  overflow: visible;
+}
+
+/* If your image is inside any media wrapper, don't crop it */
+.guide-media-card img,
+.guide-media-section img {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+  display: block;
+}
+
+/* Optional: keep large images neat on desktop */
+@media (min-width: 900px) {
+  .guide-media-image {
+    max-width: 100%;
+  }
+}
