@@ -541,7 +541,7 @@
 }
 
 /* Profile reusing AdminProfile styles - extra petowner accents */
-
+/*
 .profile-layout {
   display: grid;
   grid-template-columns: 1.1fr 1fr;
@@ -724,8 +724,6 @@
   font-size: 14px;
 }
 
-/* My Pets section in Profile */
-
 .profile-pets-card {
   background: var(--admin-card);
   border: 1px solid var(--admin-border);
@@ -822,8 +820,6 @@
   background: #fcdcd3;
 }
 
-/* Empty state */
-
 .petowner-empty-state {
   text-align: center;
   padding: 36px 18px;
@@ -836,11 +832,10 @@
   margin-bottom: 8px;
 }
 
-/* Page-title button row */
-
 .page-title-row.with-action {
   margin-bottom: 28px;
 }
+*/
 
 /* ===== PET OWNER LOGOUT MODAL ONLY ===== */
 
