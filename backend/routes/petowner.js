@@ -1018,19 +1018,9 @@ router.get("/petowner/feedback/topics", verifyToken, async (req, res) => {
   }
 });
 
-// ==========================
-// GET MY FEEDBACK HISTORY
-// Final URL: GET /api/petowner/feedback
-// ==========================
 router.get("/petowner/feedback", verifyToken, async (req, res) => {
   try {
     const userID = req.user.userID || req.user.userid || req.user.id;
-
-    if (!userID) {
-      return res.status(401).json({
-        message: "Invalid token. Please login again.",
-      });
-    }
 
     const [feedback] = await pool.query(
       `
@@ -1038,40 +1028,39 @@ router.get("/petowner/feedback", verifyToken, async (req, res) => {
         f.feedbackID,
         f.userID,
         f.emergencyID,
+        f.name,
+        f.email,
+        f.category,
         f.rating,
         f.message,
         f.status,
-        f.submitted_at,
+        f.created_at,
+
         e.topicTitle,
-        e.severity,
         p.petName,
-        p.icon,
-        u.name,
-        u.email
+        p.icon
       FROM feedback f
-      JOIN emergency_cases e ON f.emergencyID = e.emergencyID
-      JOIN pets p ON e.petID = p.petID
-      JOIN users u ON f.userID = u.userID
+      LEFT JOIN emergency_cases e ON f.emergencyID = e.emergencyID
+      LEFT JOIN pets p ON e.petID = p.petID
       WHERE f.userID = ?
-      ORDER BY f.submitted_at DESC
+      ORDER BY f.created_at DESC
       `,
       [userID]
     );
 
     res.json({
-      message: "Feedback history loaded successfully.",
+      message: "Feedback loaded successfully.",
       feedback,
     });
   } catch (error) {
-    console.error("Load feedback history error:", error);
+    console.error("Load pet owner feedback error:", error);
 
     res.status(500).json({
-      message: "Server error while loading feedback history.",
+      message: "Server error while loading feedback.",
       error: error.message,
     });
   }
 });
-
 // ==========================
 // SUBMIT PET OWNER FEEDBACK
 // Final URL: POST /api/petowner/feedback

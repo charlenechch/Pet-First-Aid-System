@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const LEVEL_STYLES = {
   green: { bg: "#EAF3DE", color: "#3B6D11" },
@@ -40,12 +40,8 @@ export default function Quiz() {
   const [result, setResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const isOpeningDirectQuiz =
-    Boolean(token) &&
-    Boolean(quizId) &&
-    !listLoading &&
-    !selected &&
-    quizList.length > 0;
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [petFilter, setPetFilter] = useState("All");
 
   async function readJson(response) {
     try {
@@ -71,7 +67,6 @@ export default function Quiz() {
     };
   }, []);
 
-  // Load quiz list after login
   useEffect(() => {
     if (!token) return;
 
@@ -119,8 +114,6 @@ export default function Quiz() {
     };
   }, [token, handleUnauthorized]);
 
-  // Open exact quiz when URL is /quiz/:quizId
-  // No startQuiz() call here, to avoid setState synchronously inside effect.
   useEffect(() => {
     if (!token || !quizId || listLoading || quizList.length === 0) return;
 
@@ -189,6 +182,35 @@ export default function Quiz() {
     buildQuizState,
   ]);
 
+  const petOptions = useMemo(() => {
+    const uniquePets = [
+      ...new Set(
+        quizList
+          .map((quiz) => quiz.petName)
+          .filter((petName) => petName && petName.trim() !== "")
+      ),
+    ];
+
+    return ["All", ...uniquePets];
+  }, [quizList]);
+
+  const filteredQuizList = useMemo(() => {
+    const keyword = searchKeyword.toLowerCase().trim();
+
+    return quizList.filter((quiz) => {
+      const matchesSearch =
+        keyword === "" ||
+        String(quiz.quizTitle || "").toLowerCase().includes(keyword) ||
+        String(quiz.topicTitle || "").toLowerCase().includes(keyword) ||
+        String(quiz.description || "").toLowerCase().includes(keyword) ||
+        String(quiz.petName || "").toLowerCase().includes(keyword);
+
+      const matchesPet = petFilter === "All" || quiz.petName === petFilter;
+
+      return matchesSearch && matchesPet;
+    });
+  }, [quizList, searchKeyword, petFilter]);
+
   async function startQuiz(quiz) {
     if (!token) {
       navigate("/login");
@@ -198,11 +220,14 @@ export default function Quiz() {
     setQuizLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/petowner/quizzes/${quiz.quizID}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${API_URL}/api/petowner/quizzes/${quiz.quizID}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const data = await readJson(response);
 
@@ -250,6 +275,17 @@ export default function Quiz() {
     }));
   }
 
+  const QS = questions;
+  const filled = Object.keys(answers).length;
+  const allDone = filled === QS.length && QS.length > 0;
+  const isLast = cur === QS.length - 1;
+  const pct = Math.round(
+    ((submitted ? QS.length : filled) / (QS.length || 1)) * 100
+  );
+  const currentQ = QS[cur];
+  const currentAnswered =
+    currentQ && answers[currentQ.questionID] !== undefined;
+
   async function submitQuiz() {
     if (submitting || !selected) return;
 
@@ -293,21 +329,6 @@ export default function Quiz() {
       setSubmitting(false);
     }
   }
-
-  const filteredQuizList = useMemo(() => {
-    return quizList;
-  }, [quizList]);
-
-  const QS = questions;
-  const filled = Object.keys(answers).length;
-  const allDone = filled === QS.length && QS.length > 0;
-  const isLast = cur === QS.length - 1;
-  const pct = Math.round(
-    ((submitted ? QS.length : filled) / (QS.length || 1)) * 100
-  );
-  const currentQ = QS[cur];
-  const currentAnswered =
-    currentQ && answers[currentQ.questionID] !== undefined;
 
   function getOptClass(questionID, answerID) {
     const q = QS.find((item) => Number(item.questionID) === Number(questionID));
@@ -364,14 +385,12 @@ export default function Quiz() {
     );
   }
 
-  if (listLoading || quizLoading || isOpeningDirectQuiz) {
+  if (listLoading || quizLoading) {
     return (
       <main className="qz-select-page">
         <div className="qz-select-grid">
           <p style={{ color: "#888" }}>
-            {quizLoading || isOpeningDirectQuiz
-              ? "Opening quiz…"
-              : "Loading quizzes…"}
+            {quizLoading ? "Opening quiz…" : "Loading quizzes…"}
           </p>
         </div>
       </main>
@@ -386,6 +405,26 @@ export default function Quiz() {
           <p>Test your pet first-aid knowledge and track your progress</p>
         </div>
 
+        <div className="qz-filter-row">
+          <input
+            type="text"
+            placeholder="Search quiz, topic, or pet..."
+            value={searchKeyword}
+            onChange={(event) => setSearchKeyword(event.target.value)}
+          />
+
+          <select
+            value={petFilter}
+            onChange={(event) => setPetFilter(event.target.value)}
+          >
+            {petOptions.map((pet) => (
+              <option key={pet} value={pet}>
+                {pet === "All" ? "All Pets" : pet}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {listError && (
           <div className="qz-select-grid">
             <p style={{ color: "crimson" }}>{listError}</p>
@@ -395,7 +434,7 @@ export default function Quiz() {
         {!listError && (
           <div className="qz-select-grid">
             {filteredQuizList.length === 0 && (
-              <p style={{ color: "#888" }}>No quizzes available yet.</p>
+              <p style={{ color: "#888" }}>No quizzes match your search.</p>
             )}
 
             {filteredQuizList.map((quiz) => {
@@ -716,7 +755,11 @@ export default function Quiz() {
               ↺ Try again
             </button>
 
-            <button type="button" className="qz-nbtn qz-nbtn-primary" onClick={reset}>
+            <button
+              type="button"
+              className="qz-nbtn qz-nbtn-primary"
+              onClick={reset}
+            >
               ← All Quizzes
             </button>
           </div>

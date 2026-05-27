@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -17,10 +17,10 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
 
     setError("");
     setMessage("");
@@ -28,7 +28,6 @@ export default function ForgotPassword() {
 
   const getPasswordStrength = () => {
     const password = formData.newPassword;
-
     let strength = 0;
 
     if (password.length >= 6) strength++;
@@ -42,12 +41,23 @@ export default function ForgotPassword() {
   const getStrengthText = () => {
     const strength = getPasswordStrength();
 
-    if (!formData.newPassword) return "Use 8+ characters with numbers and symbols";
+    if (!formData.newPassword) {
+      return "Use 8+ characters with numbers and symbols";
+    }
+
     if (strength <= 1) return "Weak password";
     if (strength === 2) return "Medium password";
     if (strength === 3) return "Good password";
     return "Strong password";
   };
+
+  async function readJson(response) {
+    try {
+      return await response.json();
+    } catch {
+      return {};
+    }
+  }
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
@@ -55,8 +65,13 @@ export default function ForgotPassword() {
     setError("");
     setMessage("");
 
-    if (!formData.email || !formData.newPassword || !formData.confirmPassword) {
-      setError("Please fill in all required fields.");
+    if (!formData.email.trim()) {
+      setError("Please enter your email address.");
+      return;
+    }
+
+    if (!formData.newPassword || !formData.confirmPassword) {
+      setError("Please fill in all password fields.");
       return;
     }
 
@@ -73,19 +88,19 @@ export default function ForgotPassword() {
     try {
       setLoading(true);
 
-      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.email.trim(),
           newPassword: formData.newPassword,
           confirmPassword: formData.confirmPassword,
         }),
       });
 
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok) {
         setError(data.message || "Password reset failed. Please try again.");
@@ -112,7 +127,9 @@ export default function ForgotPassword() {
       <div className="forgot-left">
         <div className="forgot-left-content">
           <div className="forgot-brand-icon">🐾</div>
+
           <h1>Reset Your Password</h1>
+
           <p>
             Create a new password for your PawGuard account. Make sure it is
             something secure and memorable.
@@ -136,7 +153,9 @@ export default function ForgotPassword() {
         <div className="forgot-card">
           <div className="forgot-card-header">
             <div className="forgot-icon">🔐</div>
+
             <h2>New Password</h2>
+
             <p className="forgot-subtitle">
               Enter your email and confirm your new password below
             </p>
@@ -146,9 +165,10 @@ export default function ForgotPassword() {
             {error && (
               <div className="auth-alert error">
                 <div className="auth-alert-icon">!</div>
+
                 <div className="auth-alert-text">
                   <strong>Password reset failed</strong>
-                  {error}
+                  <span>{error}</span>
                 </div>
               </div>
             )}
@@ -156,17 +176,20 @@ export default function ForgotPassword() {
             {message && (
               <div className="auth-alert success">
                 <div className="auth-alert-icon">✓</div>
+
                 <div className="auth-alert-text">
                   <strong>Password reset successful</strong>
-                  {message}
+                  <span>{message}</span>
                 </div>
               </div>
             )}
 
             <div className="input-group">
               <label>Email address</label>
+
               <div className="input-wrapper">
                 <span className="input-icon">✉️</span>
+
                 <input
                   type="email"
                   name="email"
@@ -180,8 +203,10 @@ export default function ForgotPassword() {
 
             <div className="input-group">
               <label>New password</label>
+
               <div className="input-wrapper">
                 <span className="input-icon">🔒</span>
+
                 <input
                   type="password"
                   name="newPassword"
@@ -195,8 +220,10 @@ export default function ForgotPassword() {
 
             <div className="input-group">
               <label>Confirm new password</label>
+
               <div className="input-wrapper">
                 <span className="input-icon">🔒</span>
+
                 <input
                   type="password"
                   name="confirmPassword"
@@ -212,10 +239,10 @@ export default function ForgotPassword() {
               <p className="strength-label">Password strength</p>
 
               <div className="strength-bars">
-                <div className={`strength-bar ${strength >= 1 ? "active" : ""}`}></div>
-                <div className={`strength-bar ${strength >= 2 ? "active" : ""}`}></div>
-                <div className={`strength-bar ${strength >= 3 ? "active" : ""}`}></div>
-                <div className={`strength-bar ${strength >= 4 ? "active" : ""}`}></div>
+                <div className={`strength-bar ${strength >= 1 ? "active" : ""}`} />
+                <div className={`strength-bar ${strength >= 2 ? "active" : ""}`} />
+                <div className={`strength-bar ${strength >= 3 ? "active" : ""}`} />
+                <div className={`strength-bar ${strength >= 4 ? "active" : ""}`} />
               </div>
 
               <p className="strength-hint">{getStrengthText()}</p>

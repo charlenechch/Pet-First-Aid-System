@@ -1694,3 +1694,39 @@
     content: "Attempted";
   }
 }
+
+/* Center Pet Owner Dashboard stat cards */
+.petowner-dashboard .stats-grid,
+.admin-page .stats-grid {
+  max-width: 1120px;
+  margin: 0 auto 28px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  justify-content: center;
+  gap: 24px;
+}
+
+.petowner-dashboard .admin-stat-card,
+.admin-page .stats-grid .admin-stat-card {
+  width: 100%;
+  min-height: 150px;
+  text-align: center;
+}
+
+/* For medium screen */
+@media (max-width: 900px) {
+  .petowner-dashboard .stats-grid,
+  .admin-page .stats-grid {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    max-width: 760px;
+  }
+}
+
+/* For phone screen */
+@media (max-width: 600px) {
+  .petowner-dashboard .stats-grid,
+  .admin-page .stats-grid {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+}

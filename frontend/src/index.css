@@ -5403,3 +5403,181 @@ a {
     top: 18px;
   }
 }
+
+.qz-filter-row {
+  max-width: 1050px;
+  margin: 0 auto 24px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 220px;
+  gap: 14px;
+  align-items: center;
+}
+
+.qz-filter-row input,
+.qz-filter-row select {
+  width: 100%;
+  border: 1px solid #e5e2dc;
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-size: 0.95rem;
+  background: #ffffff;
+  color: #143b28;
+  outline: none;
+}
+
+.qz-filter-row input:focus,
+.qz-filter-row select:focus {
+  border-color: #143b28;
+  box-shadow: 0 0 0 4px rgba(20, 59, 40, 0.08);
+}
+
+@media (max-width: 700px) {
+  .qz-filter-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/*  QUIZ LOGIN REQUIRED PAGE DESIGN  */
+
+.qz-select-page {
+  min-height: calc(100vh - 90px);
+  background:
+    radial-gradient(circle at top left, rgba(220, 239, 220, 0.65), transparent 32%),
+    linear-gradient(180deg, #f8f5ef 0%, #ffffff 100%);
+  padding: 70px 7vw;
+  color: #143b28;
+}
+
+/* Top title area */
+.qz-select-header {
+  max-width: 900px;
+  margin: 0 auto 36px;
+  text-align: center;
+}
+
+.qz-select-header h1 {
+  margin: 0 0 12px;
+  font-family: "Playfair Display", serif;
+  font-size: clamp(2.3rem, 5vw, 4rem);
+  line-height: 1.1;
+  color: #143b28;
+}
+
+.qz-select-header p {
+  margin: 0;
+  color: #6f7c73;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.qz-select-header a {
+  color: #143b28;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.qz-select-header a:hover {
+  text-decoration: underline;
+}
+
+/* Login required card container */
+.qz-select-grid {
+  max-width: 680px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+/* Targets the inline div in your login required section */
+.qz-select-grid > div {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e5e2dc;
+  border-radius: 28px;
+  padding: 46px 38px !important;
+  text-align: center;
+  box-shadow: 0 24px 55px rgba(28, 55, 42, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative top icon */
+.qz-select-grid > div::before {
+  content: "🔐";
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
+  background: #e8f4df;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 22px;
+  font-size: 2rem;
+}
+
+/* Soft decorative circle */
+.qz-select-grid > div::after {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  right: -70px;
+  bottom: -70px;
+  background: rgba(232, 244, 223, 0.75);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.qz-select-grid > div p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: #6f7c73 !important;
+  font-size: 1.08rem !important;
+  line-height: 1.7;
+}
+
+.qz-select-grid > div a {
+  color: #143b28 !important;
+  font-weight: 900 !important;
+  text-decoration: none;
+  background: #e8f4df;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.qz-select-grid > div a:hover {
+  background: #143b28;
+  color: #ffffff !important;
+  text-decoration: none;
+}
+
+/* Optional: make the page feel less empty */
+.qz-select-page .qz-select-grid {
+  margin-top: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .qz-select-page {
+    padding: 46px 20px;
+  }
+
+  .qz-select-header {
+    text-align: left;
+    margin-bottom: 26px;
+  }
+
+  .qz-select-header h1 {
+    font-size: 2.4rem;
+  }
+
+  .qz-select-grid {
+    max-width: 100%;
+  }
+
+  .qz-select-grid > div {
+    padding: 36px 24px !important;
+    border-radius: 22px;
+  }
+}

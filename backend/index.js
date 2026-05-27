@@ -349,6 +349,88 @@ app.get("/api/emergency-topics/:emergencyID", async (req, res) => {
   }
 });
 
+
+// PUBLIC FEEDBACK
+// Uses same feedback table as pet owner feedback
+// If email matches registered user, link to that userID
+app.post("/api/public/feedback", async (req, res) => {
+  try {
+    const { name, email, category, rating, message } = req.body;
+
+    if (!name || !email || !category || !rating || !message) {
+      return res.status(400).json({
+        message: "All fields are required.",
+      });
+    }
+
+    if (Number(rating) < 1 || Number(rating) > 5) {
+      return res.status(400).json({
+        message: "Rating must be between 1 and 5.",
+      });
+    }
+
+    if (message.trim().length < 10) {
+      return res.status(400).json({
+        message: "Feedback message must be at least 10 characters.",
+      });
+    }
+
+    const [users] = await pool.query(
+      `
+      SELECT userID
+      FROM users
+      WHERE LOWER(email) = LOWER(?)
+      LIMIT 1
+      `,
+      [email.trim()]
+    );
+
+    const linkedUserID = users.length > 0 ? users[0].userID : null;
+
+    await pool.query(
+      `
+      INSERT INTO feedback
+      (
+        userID,
+        emergencyID,
+        name,
+        email,
+        category,
+        rating,
+        message,
+        status
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        linkedUserID,
+        null,
+        name.trim(),
+        email.trim(),
+        category,
+        Number(rating),
+        message.trim(),
+        "Pending",
+      ]
+    );
+
+    res.json({
+      message: linkedUserID
+        ? "Feedback submitted and linked to your account."
+        : "Feedback submitted successfully.",
+      linkedToAccount: Boolean(linkedUserID),
+    });
+  } catch (error) {
+    console.error("Public feedback error:", error);
+
+    res.status(500).json({
+      message: "Server error while submitting feedback.",
+      error: error.message,
+    });
+  }
+});
+
+
 // PUBLIC STATS
 app.get("/api/stats", async (req, res) => {
   try {
