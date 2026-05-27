@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { petTypes } from "../../data/petOwnerData";
 import "../../styles/admin.css";
+import "../../styles/adminProfile.css"; 
 import "../../styles/petOwner.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
@@ -875,7 +876,7 @@ function Profile() {
 
   if (loading) {
     return (
-      <div className="admin-page">
+       <div className="admin-page shared-profile-page petowner-profile-page">
         <section className="admin-table-card">
           <h2>Loading Profile...</h2>
           <p className="form-note">
@@ -887,7 +888,7 @@ function Profile() {
   }
 
   return (
-    <div className="admin-page">
+     <div className="admin-page shared-profile-page petowner-profile-page">
       {successToast && (
         <div className="profile-success-toast">
           <div className="profile-success-toast-icon">✓</div>

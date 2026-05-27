@@ -12,15 +12,13 @@ const PET_ICONS = {
   Fish: "🐟",
 };
 
-const SEVERITIES = ["All Severity", "Critical", "High", "Moderate", "Mild", "Low"];
+const SEVERITIES = ["All Severity", "Critical", "Moderate", "Mild"];
 
 const SEVERITY_STYLES = {
   "All Severity": { bg: "#f3f4f6", color: "#6b7280" },
   Critical: { bg: "#FCEBEB", color: "#A32D2D" },
-  High: { bg: "#FCEBEB", color: "#A32D2D" },
   Moderate: { bg: "#FAEEDA", color: "#854F0B" },
   Mild: { bg: "#EAF3DE", color: "#3B6D11" },
-  Low: { bg: "#EAF3DE", color: "#3B6D11" },
 };
 
 const GUIDES_PER_PAGE = 9;

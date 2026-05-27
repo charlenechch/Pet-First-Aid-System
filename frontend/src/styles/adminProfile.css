@@ -1,9 +1,18 @@
 /* Shared profile page styling.
    Scoped under .shared-profile-page so it will not affect other pages. */
 
+.shared-profile-page {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.shared-profile-page .page-title-row {
+  margin-bottom: 24px;
+}
+
 .shared-profile-page .profile-layout {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
@@ -11,33 +20,35 @@
 .shared-profile-page .profile-card,
 .shared-profile-page .profile-info-card,
 .shared-profile-page .profile-security-card,
+.shared-profile-page .profile-pets-card,
 .shared-profile-page .profile-activity-card {
-  background: var(--admin-card);
-  border: 1px solid var(--admin-border);
-  border-radius: 20px;
-  padding: 28px;
-  box-shadow: 0 10px 28px rgba(37, 48, 41, 0.04);
+  background: #ffffff;
+  border: 1px solid #e7e3dc;
+  border-radius: 22px;
+  box-shadow: 0 14px 36px rgba(37, 48, 41, 0.07);
 }
 
 .shared-profile-page .profile-card {
-  position: relative;
+  grid-column: 1;
+  position: sticky;
+  top: 88px;
   overflow: hidden;
+  padding: 0;
 }
 
 .shared-profile-page .profile-cover {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 118px;
-  background: linear-gradient(135deg, #fbe6d8 0%, #dff1df 100%);
+  height: 120px;
+  background: linear-gradient(135deg, #fbe6d8 0%, #eef1dc 50%, #dff1df 100%);
+  position: relative;
 }
 
 .shared-profile-page .profile-cover::after {
   content: "";
   position: absolute;
-  right: 28px;
-  top: -34px;
-  width: 120px;
-  height: 120px;
+  right: 26px;
+  top: -36px;
+  width: 118px;
+  height: 118px;
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 50%;
 }
@@ -47,7 +58,8 @@
   display: flex;
   gap: 18px;
   align-items: flex-end;
-  margin-top: 58px;
+  padding: 0 28px;
+  margin-top: -42px;
 }
 
 .shared-profile-page .profile-avatar-wrap {
@@ -56,19 +68,19 @@
 }
 
 .shared-profile-page .profile-avatar {
-  width: 110px;
-  height: 110px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #dff1df, #fbe6d8);
+  background: linear-gradient(135deg, #eef7e8, #fbe6d8);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--admin-green-dark);
+  color: #173d2f;
   font-family: "Playfair Display", serif;
-  font-size: 36px;
-  font-weight: 700;
-  border: 4px solid #ffffff;
-  box-shadow: 0 14px 30px rgba(37, 48, 41, 0.12);
+  font-size: 34px;
+  font-weight: 800;
+  border: 5px solid #ffffff;
+  box-shadow: 0 14px 30px rgba(37, 48, 41, 0.14);
   overflow: hidden;
 }
 
@@ -80,24 +92,25 @@
 
 .shared-profile-page .profile-avatar-edit-btn {
   position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 34px;
-  height: 34px;
+  bottom: 5px;
+  right: 5px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 2px solid #ffffff;
-  background: var(--admin-green);
+  background: #2f6b4f;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
+  box-shadow: 0 8px 18px rgba(47, 107, 79, 0.25);
 }
 
 .shared-profile-page .profile-avatar-edit-btn:hover {
-  background: var(--admin-green-dark);
+  background: #173d2f;
 }
 
 .shared-profile-page .profile-name-area {
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   min-width: 0;
 }
 
@@ -105,14 +118,15 @@
   margin: 0;
   font-family: "Playfair Display", serif;
   font-size: 26px;
-  color: var(--admin-text);
-  line-height: 1.2;
+  color: #173d2f;
+  line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
 .shared-profile-page .profile-name-area p {
-  margin: 4px 0 10px;
-  color: var(--admin-muted);
+  margin: 5px 0 10px;
+  color: #6f7c73;
+  font-size: 14px;
   overflow-wrap: anywhere;
 }
 
@@ -122,28 +136,35 @@
   flex-wrap: wrap;
 }
 
-.shared-profile-page .role-badge {
-  display: inline-block;
+.shared-profile-page .role-badge,
+.shared-profile-page .status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 6px 14px;
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-  background: #fbe6d8;
-  color: #8a4426;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
   white-space: nowrap;
 }
 
+.shared-profile-page .role-badge,
 .shared-profile-page .admin-role-badge {
-  background: #f7eadf;
-  color: #8a4426;
+  background: #fbe6d8;
+  color: #9a4a2b;
+}
+
+.shared-profile-page .status-badge {
+  background: #dff3e3;
+  color: #1f6b3f;
 }
 
 .shared-profile-page .profile-bio {
-  position: relative;
-  margin: 24px 0 0;
+  margin: 24px 28px 0;
   padding-top: 20px;
   border-top: 1px solid #f0eee9;
-  color: var(--admin-muted);
+  color: #6f7c73;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
@@ -152,7 +173,7 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: 24px;
+  margin: 24px 28px 28px;
   padding-top: 20px;
   border-top: 1px solid #f0eee9;
 }
@@ -161,58 +182,66 @@
 .shared-profile-page .profile-action-row .secondary-btn {
   flex: 1;
   min-width: 140px;
+  min-height: 44px;
+  border-radius: 999px;
 }
 
 .shared-profile-page .profile-info-card,
 .shared-profile-page .profile-security-card,
+.shared-profile-page .profile-pets-card,
 .shared-profile-page .profile-activity-card {
   grid-column: 2;
+  padding: 28px;
 }
 
 .shared-profile-page .profile-info-card h2,
 .shared-profile-page .profile-security-card h2,
+.shared-profile-page .profile-pets-card h2,
 .shared-profile-page .profile-activity-card h2 {
   margin: 0 0 18px;
   padding-bottom: 14px;
   border-bottom: 1px solid #f0eee9;
   font-family: "Playfair Display", serif;
   font-size: 22px;
-  color: var(--admin-text);
+  color: #173d2f;
 }
 
 .shared-profile-page .profile-info-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .shared-profile-page .profile-info-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   padding: 16px 18px;
   background: #fbfaf6;
-  border: 1px solid var(--admin-border);
-  border-radius: 12px;
+  border: 1px solid #e7e3dc;
+  border-radius: 14px;
+  min-height: 82px;
 }
 
 .shared-profile-page .profile-info-item span {
-  color: var(--admin-muted);
-  font-size: 12px;
-  font-weight: 700;
+  color: #6f7c73;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1.2px;
 }
 
 .shared-profile-page .profile-info-item strong {
-  color: var(--admin-text);
+  color: #102b21;
   font-size: 15px;
+  line-height: 1.4;
   word-break: break-word;
 }
 
 .shared-profile-page .profile-security-card,
+.shared-profile-page .profile-pets-card,
 .shared-profile-page .profile-activity-card {
-  margin-top: 20px;
+  margin-top: 22px;
 }
 
 .shared-profile-page .security-status-box {
@@ -222,9 +251,9 @@
   gap: 14px;
   flex-wrap: wrap;
   padding: 16px 18px;
-  border: 1px solid var(--admin-border);
-  border-radius: 14px;
-  background: #ffffff;
+  border: 1px solid #e7e3dc;
+  border-radius: 16px;
+  background: #fbfaf6;
   margin-bottom: 12px;
 }
 
@@ -233,85 +262,106 @@
 }
 
 .shared-profile-page .security-status-box strong {
-  color: var(--admin-text);
+  color: #102b21;
   font-size: 14px;
 }
 
 .shared-profile-page .security-status-box p {
   margin: 4px 0 0;
-  color: var(--admin-muted);
+  color: #6f7c73;
   font-size: 13px;
   line-height: 1.5;
 }
 
-.shared-profile-page .profile-activity-list {
+/* Pet owner card alignment */
+
+.shared-profile-page .profile-pets-card .table-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.shared-profile-page .profile-pets-card .form-note {
+  margin: 6px 0 0;
+  color: #6f7c73;
+  line-height: 1.5;
+}
+
+.shared-profile-page .add-pet-btn {
+  min-width: 120px;
+  border-radius: 999px;
+}
+
+.shared-profile-page .petowner-empty-state {
+  min-height: 190px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  color: #6f7c73;
+  background: #fbfaf6;
+  border: 1px dashed #d8d2c8;
+  border-radius: 18px;
 }
 
-.shared-profile-page .profile-activity-item {
+.shared-profile-page .petowner-empty-state .empty-icon {
+  font-size: 30px;
+}
+
+.shared-profile-page .my-pets-grid {
   display: grid;
-  grid-template-columns: 26px minmax(0, 1fr);
-  gap: 12px;
-  align-items: flex-start;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0eee9;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
 }
 
-.shared-profile-page .profile-activity-item:last-child {
-  border-bottom: none;
+.shared-profile-page .my-pet-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #e7e3dc;
+  border-radius: 16px;
+  background: #fbfaf6;
 }
 
-.shared-profile-page .activity-dot {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--admin-green-light);
-  border: 1px solid var(--admin-green);
-  position: relative;
-  margin-top: 2px;
+.shared-profile-page .my-pet-emoji {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef7e8;
+  font-size: 24px;
+  flex-shrink: 0;
 }
 
-.shared-profile-page .activity-dot::after {
-  content: "";
-  position: absolute;
-  inset: 7px;
-  border-radius: 50%;
-  background: var(--admin-green);
+.shared-profile-page .my-pet-info {
+  flex: 1;
+  min-width: 0;
 }
 
-.shared-profile-page .profile-activity-item strong {
-  color: var(--admin-text);
-  font-size: 14px;
-  overflow-wrap: anywhere;
+.shared-profile-page .my-pet-info h3 {
+  margin: 0;
+  color: #102b21;
+  font-size: 16px;
 }
 
-.shared-profile-page .profile-activity-item p {
+.shared-profile-page .my-pet-type,
+.shared-profile-page .my-pet-breed {
   margin: 4px 0 0;
-  color: var(--admin-muted);
+  color: #6f7c73;
   font-size: 13px;
 }
 
-/* Pet Owner extra pills */
-
-.shared-profile-page .profile-pets-row {
+.shared-profile-page .my-pet-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-top: 18px;
-}
-
-.shared-profile-page .profile-pet-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--admin-green-light);
-  color: var(--admin-green-dark);
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 14px;
 }
 
 /* Avatar modal */
@@ -336,7 +386,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--admin-green-dark);
+  color: #173d2f;
   font-family: "Playfair Display", serif;
   font-size: 38px;
   font-weight: 700;
@@ -354,7 +404,7 @@
 .shared-profile-page .avatar-upload-box {
   flex: 1;
   min-width: 220px;
-  border: 1px dashed var(--admin-border);
+  border: 1px dashed #d8d2c8;
   border-radius: 16px;
   padding: 18px;
   background: #fbfaf6;
@@ -364,7 +414,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--admin-green);
+  background: #2f6b4f;
   color: #ffffff;
   padding: 10px 16px;
   border-radius: 999px;
@@ -378,7 +428,7 @@
 
 .shared-profile-page .avatar-upload-box p {
   margin: 12px 0 0;
-  color: var(--admin-muted);
+  color: #6f7c73;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -386,26 +436,25 @@
 .shared-profile-page .avatar-file-name {
   display: block;
   margin-top: 8px;
-  color: var(--admin-green-dark);
+  color: #173d2f;
   font-weight: 700;
-}
-
-.shared-profile-page .profile-security-note {
-  margin: 0;
-  color: var(--admin-muted);
-  font-size: 13px;
-  line-height: 1.5;
 }
 
 /* Responsive */
 
-@media (max-width: 1100px) {
+@media (max-width: 1050px) {
   .shared-profile-page .profile-layout {
     grid-template-columns: 1fr;
   }
 
+  .shared-profile-page .profile-card {
+    position: relative;
+    top: auto;
+  }
+
   .shared-profile-page .profile-info-card,
   .shared-profile-page .profile-security-card,
+  .shared-profile-page .profile-pets-card,
   .shared-profile-page .profile-activity-card {
     grid-column: auto;
   }
@@ -421,8 +470,13 @@
     grid-template-columns: 1fr;
   }
 
+  .shared-profile-page .profile-pets-card .table-header-row {
+    flex-direction: column;
+  }
+
   .shared-profile-page .profile-action-row .primary-btn,
-  .shared-profile-page .profile-action-row .secondary-btn {
+  .shared-profile-page .profile-action-row .secondary-btn,
+  .shared-profile-page .add-pet-btn {
     width: 100%;
   }
 }
@@ -431,13 +485,25 @@
   .shared-profile-page .profile-card,
   .shared-profile-page .profile-info-card,
   .shared-profile-page .profile-security-card,
+  .shared-profile-page .profile-pets-card,
   .shared-profile-page .profile-activity-card {
     padding: 22px;
   }
 
+  .shared-profile-page .profile-card {
+    padding: 0;
+  }
+
+  .shared-profile-page .profile-main-info,
+  .shared-profile-page .profile-bio,
+  .shared-profile-page .profile-action-row {
+    margin-left: 22px;
+    margin-right: 22px;
+  }
+
   .shared-profile-page .profile-avatar {
-    width: 96px;
-    height: 96px;
-    font-size: 32px;
+    width: 94px;
+    height: 94px;
+    font-size: 30px;
   }
 }
