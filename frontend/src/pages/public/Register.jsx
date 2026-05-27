@@ -15,6 +15,9 @@ export default function Register() {
     confirmPassword: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [error, setError] = useState("");
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -47,23 +50,23 @@ export default function Register() {
       return "Use 8+ characters with numbers and symbols";
     }
 
-    if (strength <= 1) {
-      return "Weak password";
-    }
-
-    if (strength === 2) {
-      return "Medium password";
-    }
-
-    if (strength === 3) {
-      return "Good password";
-    }
-
+    if (strength <= 1) return "Weak password";
+    if (strength === 2) return "Medium password";
+    if (strength === 3) return "Good password";
     return "Strong password";
   };
 
+  async function readJson(response) {
+    try {
+      return await response.json();
+    } catch {
+      return {};
+    }
+  }
+
   const handleRegister = async (e) => {
     e.preventDefault();
+
     setError("");
     setShowSuccessToast(false);
 
@@ -98,14 +101,14 @@ export default function Register() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          phone_no: formData.phone_no,
+          name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+          email: formData.email.trim(),
+          phone_no: formData.phone_no.trim(),
           password: formData.password,
         }),
       });
 
-      const data = await response.json();
+      const data = await readJson(response);
 
       if (!response.ok) {
         setError(data.message || "Registration failed. Please try again.");
@@ -143,7 +146,9 @@ export default function Register() {
       <section className="register-left">
         <div className="register-left-content">
           <div className="register-brand-icon">🐾</div>
+
           <h1>Join PawGuard today</h1>
+
           <p>
             Create an account to save guides, manage pet profiles, and access
             emergency first-aid support anytime.
@@ -167,7 +172,9 @@ export default function Register() {
         <div className="register-card">
           <div className="register-card-header">
             <div className="register-card-icon">🐶</div>
+
             <h2>Create Account</h2>
+
             <p className="register-subtitle">Start protecting your pet today</p>
           </div>
 
@@ -175,6 +182,7 @@ export default function Register() {
             {error && (
               <div className="auth-alert error">
                 <div className="auth-alert-icon">!</div>
+
                 <div className="auth-alert-text">
                   <strong>Registration failed</strong>
                   {error}
@@ -185,8 +193,10 @@ export default function Register() {
             <div className="register-row">
               <div className="input-group">
                 <label>First name</label>
+
                 <div className="input-wrapper">
                   <span className="input-icon">👤</span>
+
                   <input
                     type="text"
                     name="firstName"
@@ -200,8 +210,10 @@ export default function Register() {
 
               <div className="input-group">
                 <label>Last name</label>
+
                 <div className="input-wrapper">
                   <span className="input-icon">👤</span>
+
                   <input
                     type="text"
                     name="lastName"
@@ -216,8 +228,10 @@ export default function Register() {
 
             <div className="input-group">
               <label>Email address</label>
+
               <div className="input-wrapper">
                 <span className="input-icon">✉️</span>
+
                 <input
                   type="email"
                   name="email"
@@ -231,8 +245,10 @@ export default function Register() {
 
             <div className="input-group">
               <label>Phone number</label>
+
               <div className="input-wrapper">
                 <span className="input-icon">📱</span>
+
                 <input
                   type="text"
                   name="phone_no"
@@ -246,16 +262,28 @@ export default function Register() {
 
             <div className="input-group">
               <label>Password</label>
-              <div className="input-wrapper">
+
+              <div className="input-wrapper password-wrapper">
                 <span className="input-icon">🔒</span>
+
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Create a password"
                   value={formData.password}
                   onChange={handleChange}
                   disabled={loading}
                 />
+
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  disabled={loading}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
               </div>
             </div>
 
@@ -263,10 +291,18 @@ export default function Register() {
               <p className="strength-label">Password strength</p>
 
               <div className="strength-bars">
-                <div className={`strength-bar ${strength >= 1 ? "active" : ""}`}></div>
-                <div className={`strength-bar ${strength >= 2 ? "active" : ""}`}></div>
-                <div className={`strength-bar ${strength >= 3 ? "active" : ""}`}></div>
-                <div className={`strength-bar ${strength >= 4 ? "active" : ""}`}></div>
+                <div
+                  className={`strength-bar ${strength >= 1 ? "active" : ""}`}
+                ></div>
+                <div
+                  className={`strength-bar ${strength >= 2 ? "active" : ""}`}
+                ></div>
+                <div
+                  className={`strength-bar ${strength >= 3 ? "active" : ""}`}
+                ></div>
+                <div
+                  className={`strength-bar ${strength >= 4 ? "active" : ""}`}
+                ></div>
               </div>
 
               <p className="strength-hint">{getStrengthText()}</p>
@@ -274,16 +310,32 @@ export default function Register() {
 
             <div className="input-group">
               <label>Confirm password</label>
-              <div className="input-wrapper">
+
+              <div className="input-wrapper password-wrapper">
                 <span className="input-icon">🔒</span>
+
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
                   placeholder="Repeat your password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   disabled={loading}
                 />
+
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  disabled={loading}
+                  aria-label={
+                    showConfirmPassword
+                      ? "Hide confirm password"
+                      : "Show confirm password"
+                  }
+                >
+                  {showConfirmPassword ? "🙈" : "👁️"}
+                </button>
               </div>
             </div>
 

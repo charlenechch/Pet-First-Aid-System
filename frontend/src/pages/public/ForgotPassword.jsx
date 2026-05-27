@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -11,6 +11,9 @@ export default function ForgotPassword() {
     newPassword: "",
     confirmPassword: "",
   });
+
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -204,34 +207,60 @@ export default function ForgotPassword() {
             <div className="input-group">
               <label>New password</label>
 
-              <div className="input-wrapper">
+              <div className="input-wrapper password-wrapper">
                 <span className="input-icon">🔒</span>
 
                 <input
-                  type="password"
+                  type={showNewPassword ? "text" : "password"}
                   name="newPassword"
                   placeholder="Enter new password"
                   value={formData.newPassword}
                   onChange={handleChange}
                   disabled={loading}
                 />
+
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  disabled={loading}
+                  aria-label={
+                    showNewPassword ? "Hide new password" : "Show new password"
+                  }
+                >
+                  {showNewPassword ? "🙈" : "👁️"}
+                </button>
               </div>
             </div>
 
             <div className="input-group">
               <label>Confirm new password</label>
 
-              <div className="input-wrapper">
+              <div className="input-wrapper password-wrapper">
                 <span className="input-icon">🔒</span>
 
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
                   placeholder="Re-enter new password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   disabled={loading}
                 />
+
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  disabled={loading}
+                  aria-label={
+                    showConfirmPassword
+                      ? "Hide confirm password"
+                      : "Show confirm password"
+                  }
+                >
+                  {showConfirmPassword ? "🙈" : "👁️"}
+                </button>
               </div>
             </div>
 
@@ -239,10 +268,18 @@ export default function ForgotPassword() {
               <p className="strength-label">Password strength</p>
 
               <div className="strength-bars">
-                <div className={`strength-bar ${strength >= 1 ? "active" : ""}`} />
-                <div className={`strength-bar ${strength >= 2 ? "active" : ""}`} />
-                <div className={`strength-bar ${strength >= 3 ? "active" : ""}`} />
-                <div className={`strength-bar ${strength >= 4 ? "active" : ""}`} />
+                <div
+                  className={`strength-bar ${strength >= 1 ? "active" : ""}`}
+                />
+                <div
+                  className={`strength-bar ${strength >= 2 ? "active" : ""}`}
+                />
+                <div
+                  className={`strength-bar ${strength >= 3 ? "active" : ""}`}
+                />
+                <div
+                  className={`strength-bar ${strength >= 4 ? "active" : ""}`}
+                />
               </div>
 
               <p className="strength-hint">{getStrengthText()}</p>

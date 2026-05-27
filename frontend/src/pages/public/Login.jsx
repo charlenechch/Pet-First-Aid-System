@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -10,6 +10,8 @@ export default function Login() {
     email: "",
     password: "",
   });
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -20,6 +22,9 @@ export default function Login() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+
+    setError("");
+    setMessage("");
   };
 
   const handleLogin = async (e) => {
@@ -42,37 +47,40 @@ export default function Login() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.email.trim(),
           password: formData.password,
         }),
       });
 
-      const data = await response.json();
+      let data = {};
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
 
       if (!response.ok) {
         setError(data.message || "Login failed. Please try again.");
         return;
       }
 
-      // Save login data
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       setMessage("Login successful. Redirecting...");
 
-      // Redirect based on role
       setTimeout(() => {
-  const role = data.user.role?.toLowerCase().replace(/\s+/g, "_");
+        const role = data.user.role?.toLowerCase().replace(/\s+/g, "_");
 
-  if (role === "admin") {
-    navigate("/admin/dashboard");
-  } else if (role === "pet_owner") {
-    navigate("/petowner/dashboard");
-  } else {
-    setError("Unknown user role. Please check the database role value.");
-    navigate("/login");
-  }
-}, 900);
+        if (role === "admin") {
+          navigate("/admin/dashboard");
+        } else if (role === "pet_owner") {
+          navigate("/petowner/dashboard");
+        } else {
+          setError("Unknown user role. Please check the database role value.");
+          navigate("/login");
+        }
+      }, 900);
     } catch (error) {
       console.error("Login error:", error);
       setError("Cannot connect to server. Please make sure backend is running.");
@@ -86,7 +94,9 @@ export default function Login() {
       <section className="login-left">
         <div className="login-left-content">
           <div className="login-brand-icon">🐾</div>
+
           <h1>Welcome back to PawGuard</h1>
+
           <p>
             Access saved guides, pet profiles, and emergency first-aid support
             anytime.
@@ -110,7 +120,9 @@ export default function Login() {
         <div className="login-card">
           <div className="login-card-header">
             <div className="login-card-icon">🐶</div>
+
             <h2>Welcome back</h2>
+
             <p className="login-subtitle">Sign in to your PawGuard account</p>
           </div>
 
@@ -118,6 +130,7 @@ export default function Login() {
             {error && (
               <div className="auth-alert error">
                 <div className="auth-alert-icon">!</div>
+
                 <div className="auth-alert-text">
                   <strong>Login failed</strong>
                   {error}
@@ -128,6 +141,7 @@ export default function Login() {
             {message && (
               <div className="auth-alert success">
                 <div className="auth-alert-icon">✓</div>
+
                 <div className="auth-alert-text">
                   <strong>Login successful</strong>
                   {message}
@@ -137,8 +151,10 @@ export default function Login() {
 
             <div className="input-group">
               <label>Email address</label>
+
               <div className="input-wrapper">
                 <span className="input-icon">✉️</span>
+
                 <input
                   type="email"
                   name="email"
@@ -152,16 +168,28 @@ export default function Login() {
 
             <div className="input-group">
               <label>Password</label>
-              <div className="input-wrapper">
+
+              <div className="input-wrapper password-wrapper">
                 <span className="input-icon">🔒</span>
+
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
                   disabled={loading}
                 />
+
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  disabled={loading}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
               </div>
             </div>
 

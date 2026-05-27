@@ -5684,3 +5684,37 @@ a {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper input {
+  padding-right: 52px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: #f4f1ec;
+  color: #143b28;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle-btn:hover {
+  background: #e8f4df;
+}
+
+.password-toggle-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
