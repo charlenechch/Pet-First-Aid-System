@@ -10,6 +10,7 @@ export default function Navbar() {
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const savedUser = localStorage.getItem("user");
   let user = null;
@@ -23,8 +24,13 @@ export default function Navbar() {
     user = null;
   }
 
+  const closeMobileMenu = () => {
+    setShowMobileMenu(false);
+  };
+
   const handleHomeClick = (e) => {
     e.preventDefault();
+    closeMobileMenu();
 
     if (isHome) {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -34,6 +40,8 @@ export default function Navbar() {
   };
 
   const handleDashboardClick = () => {
+    closeMobileMenu();
+
     if (!user) {
       navigate("/login");
       return;
@@ -49,6 +57,7 @@ export default function Navbar() {
   };
 
   const openLogoutModal = () => {
+    closeMobileMenu();
     setShowLogoutModal(true);
   };
 
@@ -77,7 +86,11 @@ export default function Navbar() {
     <>
       <header className="public-top-navbar">
         <div className="public-navbar-left">
-          <Link to="/" className="brand-area brand-link" onClick={handleHomeClick}>
+          <Link
+            to="/"
+            className="brand-area brand-link"
+            onClick={handleHomeClick}
+          >
             <div className="brand-logo">🐾</div>
 
             <h1 className="brand-name">
@@ -126,7 +139,113 @@ export default function Navbar() {
             </NavLink>
           )}
         </div>
+
+        <button
+          type="button"
+          className={`public-mobile-menu-btn ${
+            showMobileMenu ? "active" : ""
+          }`}
+          onClick={() => setShowMobileMenu((prev) => !prev)}
+          aria-label="Toggle menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
       </header>
+
+      {showMobileMenu && (
+        <div className="public-mobile-overlay" onClick={closeMobileMenu}>
+          <aside
+            className="public-mobile-sidebar"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="public-mobile-sidebar-header">
+              <Link
+                to="/"
+                className="brand-area brand-link"
+                onClick={handleHomeClick}
+              >
+                <div className="brand-logo">🐾</div>
+
+                <h1 className="brand-name">
+                  Paw<span>Guard</span>
+                </h1>
+              </Link>
+
+              <button
+                type="button"
+                className="public-mobile-close-btn"
+                onClick={closeMobileMenu}
+                aria-label="Close menu"
+              >
+                ×
+              </button>
+            </div>
+
+            <nav className="public-mobile-links">
+              <a
+                href="/"
+                className={isHome ? "active" : ""}
+                onClick={handleHomeClick}
+              >
+                <span>🏠</span>
+                Home
+              </a>
+
+              <NavLink to="/emergency-search" onClick={closeMobileMenu}>
+                <span>📋</span>
+                Guides
+              </NavLink>
+
+              <NavLink to="/quiz" onClick={closeMobileMenu}>
+                <span>🧠</span>
+                Quizzes
+              </NavLink>
+
+              <NavLink to="/feedback" onClick={closeMobileMenu}>
+                <span>💬</span>
+                Feedback
+              </NavLink>
+
+              <NavLink to="/about" onClick={closeMobileMenu}>
+                <span>ℹ️</span>
+                About
+              </NavLink>
+            </nav>
+
+            <div className="public-mobile-actions">
+              {user ? (
+                <>
+                  <button
+                    type="button"
+                    className="public-mobile-dashboard-btn"
+                    onClick={handleDashboardClick}
+                  >
+                    {dashboardLabel}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="public-mobile-logout-btn"
+                    onClick={openLogoutModal}
+                  >
+                    Log out
+                  </button>
+                </>
+              ) : (
+                <NavLink
+                  to="/login"
+                  className="public-mobile-login-btn"
+                  onClick={closeMobileMenu}
+                >
+                  Login
+                </NavLink>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
 
       {showLogoutModal && (
         <div className="public-logout-modal-overlay">

@@ -5669,3 +5669,18 @@ a {
     width: auto;
   }
 }
+
+.home-pet-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 28px;
+  border: 1px dashed #d8d3ca;
+  border-radius: 18px;
+  color: #6f7c73;
+  background: #fffaf4;
+}
+
+.home-pet-browse-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
