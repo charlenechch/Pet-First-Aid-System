@@ -1,31 +1,10 @@
-// ============================================================
-// ADMIN ROUTES — Pet First-Aid Information System
-// ============================================================
-//
-// PLACEMENT: save this as  backend/routes/admin.js
-//
-// MOUNT IT in index.js by adding these two lines:
-//
-//   const adminRoutes = require("./routes/admin");
-//   app.use("/api/admin", adminRoutes);
-//
-// Mounted at "/api/admin", so every route below is relative —
-// e.g. router.get("/users") is reachable at GET /api/admin/users.
-//
-// Self-contained: pulls the pool from ../db and defines its own
-// auth guards, so it does NOT depend on anything inside index.js.
-// ============================================================
-
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const pool = require("../db");
 
 const router = express.Router();
 
-// ============================================================
 // AUTH GUARDS
-// ============================================================
-
 function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
 
@@ -54,14 +33,7 @@ function verifyAdmin(req, res, next) {
 // Apply both guards to EVERY route in this router in one line.
 router.use(verifyToken, verifyAdmin);
 
-// ============================================================
 // DASHBOARD SUMMARY  ->  GET /api/admin/dashboard
-// ============================================================
-// Powers the whole Admin Overview page in one request:
-// stat-card counts + recent registrations + recent feedback.
-
-// Helper: run a COUNT query, but return 0 if the table doesn't
-// exist yet instead of crashing the whole dashboard.
 async function safeCount(sql) {
   try {
     const [rows] = await pool.query(sql);
@@ -118,10 +90,8 @@ router.get("/dashboard", async (req, res) => {
   }
 });
 
-// ============================================================
-// USER MANAGEMENT
-// ============================================================
 
+// USER MANAGEMENT
 // GET /api/admin/users  — list all users (never returns password)
 router.get("/users", async (req, res) => {
   try {
@@ -187,10 +157,8 @@ router.patch("/users/:id/status", async (req, res) => {
   }
 });
 
-// ============================================================
-// PET CATEGORIES  (Dog, Cat, Rabbit, ...)
-// ============================================================
 
+// PET CATEGORIES  (Dog, Cat, Rabbit, ...)
 router.get("/pets", async (req, res) => {
   try {
     const [pets] = await pool.query(
@@ -253,10 +221,8 @@ router.delete("/pets/:id", async (req, res) => {
   }
 });
 
-// ============================================================
-// EMERGENCY CASES
-// ============================================================
 
+// EMERGENCY CASES
 // GET /api/admin/emergency-cases  — joins petName for display.
 // Optional filters: ?status=Published  &  ?petID=2
 router.get("/emergency-cases", async (req, res) => {
@@ -366,12 +332,8 @@ router.delete("/emergency-cases/:id", async (req, res) => {
   }
 });
 
-// ============================================================
-// FIRST-AID GUIDES  (one guide per emergency case)
-// ============================================================
-// `steps` is stored as a JSON array of strings (TEXT column).
-// Send it from the frontend as a real array; it's stringified here.
 
+// FIRST-AID GUIDES  (one guide per emergency case)
 router.get("/guides", async (req, res) => {
   try {
     const [guides] = await pool.query(
@@ -474,12 +436,7 @@ router.delete("/guides/:id", async (req, res) => {
   }
 });
 
-// ============================================================
 // QUIZZES
-// ============================================================
-// Quizzes hang off a guide. Questions + answers follow the exact
-// same CRUD shape if you need them.
-
 router.get("/quizzes", async (req, res) => {
   try {
     const [quizzes] = await pool.query(
@@ -549,10 +506,7 @@ router.delete("/quizzes/:id", async (req, res) => {
   }
 });
 
-// ============================================================
 // FEEDBACK REVIEW
-// ============================================================
-
 // GET /api/admin/feedback  — newest first. Optional filter: ?status=new
 router.get("/feedback", async (req, res) => {
   try {
@@ -612,15 +566,8 @@ router.delete("/feedback/:id", async (req, res) => {
   }
 });
 
-// ============================================================
-// ADD THESE ROUTES TO backend/routes/admin.js
-// Paste above the `module.exports = router;` line
-// ============================================================
 
-// ============================================================
 // MEDIA  ->  /api/admin/media
-// ============================================================
-
 router.get("/media", async (req, res) => {
   try {
     const { guideID } = req.query;
@@ -693,10 +640,8 @@ router.delete("/media/:id", async (req, res) => {
   }
 });
 
-// ============================================================
-// VETERINARY ADVICE  ->  /api/admin/vet-advice
-// ============================================================
 
+// VETERINARY ADVICE  ->  /api/admin/vet-advice
 router.get("/vet-advice", async (req, res) => {
   try {
     const { guideID } = req.query;
@@ -766,15 +711,8 @@ router.delete("/vet-advice/:id", async (req, res) => {
   }
 });
 
-// ============================================================
-// ADD THESE ROUTES TO backend/routes/admin.js
-// Paste above the `module.exports = router;` line
-// ============================================================
 
-// ============================================================
 // MEDIA  ->  /api/admin/media
-// ============================================================
-
 router.get("/media", async (req, res) => {
   try {
     const { guideID } = req.query;
@@ -847,10 +785,8 @@ router.delete("/media/:id", async (req, res) => {
   }
 });
 
-// ============================================================
-// VETERINARY ADVICE  ->  /api/admin/vet-advice
-// ============================================================
 
+// VETERINARY ADVICE  ->  /api/admin/vet-advice
 router.get("/vet-advice", async (req, res) => {
   try {
     const { guideID } = req.query;
@@ -920,10 +856,8 @@ router.delete("/vet-advice/:id", async (req, res) => {
   }
 });
 
-// ============================================================
+
 // QUESTIONS  ->  /api/admin/questions
-// ============================================================
-
 router.get("/questions", async (req, res) => {
   try {
     const { quizID } = req.query;
@@ -1004,10 +938,8 @@ router.delete("/questions/:id", async (req, res) => {
   }
 });
 
-// ============================================================
-// QUIZ RESULTS  ->  /api/admin/quiz-results
-// ============================================================
 
+// QUIZ RESULTS  ->  /api/admin/quiz-results
 router.get("/quiz-results", async (req, res) => {
   try {
     const [results] = await pool.query(

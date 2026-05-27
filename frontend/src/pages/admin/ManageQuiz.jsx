@@ -40,14 +40,23 @@ function ManageQuiz() {
     async function fetchAll() {
       try {
         const headers = { Authorization: `Bearer ${token}` };
-        const [guidesRes, quizzesRes, resultsRes] = await Promise.all([
+        const [guidesRes, quizzesRes, questionsRes, resultsRes] = await Promise.all([
           fetch(`${API_URL}/api/admin/guides`, { headers }),
           fetch(`${API_URL}/api/admin/quizzes`, { headers }),
+          fetch(`${API_URL}/api/admin/questions`, { headers }),
           fetch(`${API_URL}/api/admin/quiz-results`, { headers }),
         ]);
-        const [g, qz, r] = await Promise.all([guidesRes.json(), quizzesRes.json(), resultsRes.json()]);
+        const [g, qz, qs, r] = await Promise.all([guidesRes.json(), quizzesRes.json(), questionsRes.json(), resultsRes.json()]);
         setGuides((g.guides || []).map((gd) => ({ id: gd.guideID, title: gd.guideTitle, topicTitle: gd.topicTitle })));
         setQuizzes((qz.quizzes || []).map((q) => ({ id: q.quizID, title: q.quizTitle, guideId: q.guideID, guideTitle: q.guideTitle, passingScore: q.pass_mark, status: q.quizStatus, description: q.description || "" })));
+        // Parse all questions upfront for question count display
+        const allQuestions = (qs.questions || []).map((q) => {
+          const texts = q.answerTexts ? q.answerTexts.split("|||") : [];
+          const corrects = q.answerCorrect ? q.answerCorrect.split(",") : [];
+          const correctAnswer = texts.find((t, i) => corrects[i] === "1") || "";
+          return { id: q.questionID, quizId: q.quizID, questionText: q.text, options: texts, correctAnswer };
+        });
+        setQuestions(allQuestions);
         setQuizResults((r.results || []).map((res) => ({ id: res.resultID, userName: res.userName, quizId: res.quizID, quizTitle: res.quizTitle, score: res.score, total: res.total_questions, passed: res.passed, attemptedAt: res.attempted_at })));
       } catch (err) {
         setError("Failed to load data. " + err.message);
@@ -426,7 +435,7 @@ function ManageQuiz() {
                   <tr key={result.id}>
                     <td>{result.userName}</td>
                     <td><span className="long-table-text">{result.quizTitle}</span></td>
-                    <td>{result.score}/{result.total}</td>
+                    <td>{result.score}%</td>
                     <td><span className={result.passed ? "status-badge" : "status-badge suspended"}>{result.passed ? "Passed" : "Failed"}</span></td>
                     <td>{relativeTime(result.attemptedAt)}</td>
                   </tr>

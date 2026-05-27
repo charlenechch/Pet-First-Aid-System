@@ -19,6 +19,7 @@
 .quiz-table th:nth-child(3),
 .quiz-table td:nth-child(3) {
   width: 16%;
+  text-align: center;
 }
 
 .quiz-table th:nth-child(4),

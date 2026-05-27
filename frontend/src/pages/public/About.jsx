@@ -1,6 +1,34 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function About() {
+  const [stats, setStats] = useState({ guides: "...", species: "...", users: "...", positiveFeedbackPct: "..." });
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/stats`)
+      .then((r) => r.json())
+      .then((data) => {
+        setStats({
+          guides: data.guides ?? "—",
+          species: data.species ?? "—",
+          users: data.users ?? "—",
+          positiveFeedbackPct: data.positiveFeedbackPct ?? "—",
+        });
+      })
+      .catch(() => {
+        setStats({ guides: "100+", species: "5+", users: "12k+", positiveFeedbackPct: "98" });
+      });
+  }, []);
+
+  const statItems = [
+    { n: `${stats.guides}+`,               label: "Guides published"  },
+    { n: `${stats.species}+`,              label: "Species covered"   },
+    { n: `${stats.users}+`,                label: "Pet owners helped" },
+    { n: `${stats.positiveFeedbackPct}%`,  label: "Positive feedback" },
+  ];
+
   return (
     <main className="about-page">
 
@@ -23,12 +51,7 @@ export default function About() {
 
       {/* STATS BAR */}
       <section className="about-stats-bar">
-        {[
-          { n: "100+", label: "Guides published" },
-          { n: "5+",   label: "Species covered"  },
-          { n: "12k+", label: "Pet owners helped" },
-          { n: "98%",  label: "Positive feedback" },
-        ].map(({ n, label }) => (
+        {statItems.map(({ n, label }) => (
           <div key={label} className="about-stats-item">
             <h3>{n}</h3>
             <p>{label}</p>
@@ -69,10 +92,7 @@ export default function About() {
             ].map(({ icon, title, desc }) => (
               <div key={title} className="about-feature-item">
                 <div className="about-feature-icon">{icon}</div>
-                <div>
-                  <h4>{title}</h4>
-                  <p>{desc}</p>
-                </div>
+                <div><h4>{title}</h4><p>{desc}</p></div>
               </div>
             ))}
           </div>
@@ -109,7 +129,6 @@ export default function About() {
           <h2>Built with care</h2>
           <p>A small team passionate about pet welfare and accessible education.</p>
         </div>
-
         <div className="about-team-grid">
           {[
             { icon: "👩‍⚕️", name: "Dr. Aisha Noor", role: "Veterinary Advisor", desc: "DVM with 12 years in emergency animal care.",       color: "green"  },

@@ -1575,6 +1575,30 @@ app.post("/api/petowner/feedback", verifyToken, async (req, res) => {
 });
 
 
+//   GET /api/stats
+app.get("/api/stats", async (req, res) => {
+  try {
+    const [[guides]]  = await pool.query("SELECT COUNT(*) AS count FROM first_aid_guides WHERE status = 'Published'");
+    const [[pets]]    = await pool.query("SELECT COUNT(*) AS count FROM pets WHERE status = 'Active'");
+    const [[users]]   = await pool.query("SELECT COUNT(*) AS count FROM users WHERE role = 'pet_owner' AND status = 'Active'");
+    const [[feedback]]= await pool.query("SELECT COUNT(*) AS count FROM feedback");
+    const [[posRating]]= await pool.query("SELECT COUNT(*) AS count FROM feedback WHERE rating >= 4");
+
+    const positivePct = feedback.count === 0 ? 100 : Math.round((posRating.count / feedback.count) * 100);
+
+    res.json({
+      guides: guides.count,
+      species: pets.count,
+      users: users.count,
+      positiveFeedbackPct: positivePct,
+    });
+  } catch (error) {
+    console.error("Stats error:", error);
+    res.status(500).json({ message: "Server error loading stats." });
+  }
+});
+
+
 // ==========================
 // START SERVER
 // ==========================
