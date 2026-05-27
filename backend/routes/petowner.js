@@ -1023,30 +1023,36 @@ router.get("/petowner/feedback", verifyToken, async (req, res) => {
     const userID = req.user.userID || req.user.userid || req.user.id;
 
     const [feedback] = await pool.query(
-      `
-      SELECT 
-        f.feedbackID,
-        f.userID,
-        f.emergencyID,
-        f.name,
-        f.email,
-        f.category,
-        f.rating,
-        f.message,
-        f.status,
-        f.created_at,
+  `
+  SELECT 
+    f.feedbackID,
+    f.userID,
+    f.emergencyID,
+    f.name,
+    f.email,
+    f.category,
+    f.rating,
+    f.message,
+    f.status,
+    f.submitted_at,
 
-        e.topicTitle,
-        p.petName,
-        p.icon
-      FROM feedback f
-      LEFT JOIN emergency_cases e ON f.emergencyID = e.emergencyID
-      LEFT JOIN pets p ON e.petID = p.petID
-      WHERE f.userID = ?
-      ORDER BY f.created_at DESC
-      `,
-      [userID]
-    );
+    e.topicTitle,
+    e.severity,
+
+    p.petName,
+    p.icon,
+
+    u.name AS userName,
+    u.email AS userEmail
+  FROM feedback f
+  LEFT JOIN emergency_cases e ON f.emergencyID = e.emergencyID
+  LEFT JOIN pets p ON e.petID = p.petID
+  LEFT JOIN users u ON f.userID = u.userID
+  WHERE f.userID = ?
+  ORDER BY f.submitted_at DESC
+  `,
+  [userID]
+);
 
     res.json({
       message: "Feedback loaded successfully.",

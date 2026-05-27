@@ -350,16 +350,18 @@ app.get("/api/emergency-topics/:emergencyID", async (req, res) => {
 });
 
 
+// ==========================
 // PUBLIC FEEDBACK
 // Uses same feedback table as pet owner feedback
 // If email matches registered user, link to that userID
+// ==========================
 app.post("/api/public/feedback", async (req, res) => {
   try {
     const { name, email, category, emergencyID, rating, message } = req.body;
 
-    if (!name || !email || !category || !rating || !message) {
+    if (!name || !email || !category || !emergencyID || !rating || !message) {
       return res.status(400).json({
-        message: "All fields are required.",
+        message: "Name, email, guide, rating, and message are required.",
       });
     }
 
@@ -375,6 +377,24 @@ app.post("/api/public/feedback", async (req, res) => {
       });
     }
 
+    // Check selected guide exists
+    const [topicRows] = await pool.query(
+      `
+      SELECT emergencyID, topicTitle
+      FROM emergency_cases
+      WHERE emergencyID = ?
+      LIMIT 1
+      `,
+      [emergencyID]
+    );
+
+    if (topicRows.length === 0) {
+      return res.status(404).json({
+        message: "Selected guide does not exist.",
+      });
+    }
+
+    // Check whether email belongs to registered user
     const [users] = await pool.query(
       `
       SELECT userID
@@ -404,10 +424,10 @@ app.post("/api/public/feedback", async (req, res) => {
       `,
       [
         linkedUserID,
-        emergencyID ? Number(emergencyID) : null,
+        Number(emergencyID),
         name.trim(),
         email.trim(),
-        category,
+        category.trim(),
         Number(rating),
         message.trim(),
         "new",
@@ -430,7 +450,6 @@ app.post("/api/public/feedback", async (req, res) => {
     });
   }
 });
-
 
 // PUBLIC STATS
 app.get("/api/stats", async (req, res) => {
