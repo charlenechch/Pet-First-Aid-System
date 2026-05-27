@@ -1234,7 +1234,7 @@
 /*PET OWNER DASHBOARD */
 
 /* Page spacing */
-.petowner-layout .admin-page {
+.petowner-layout .admin-page:not(.shared-profile-page) {
   max-width: 100%;
   overflow-x: hidden;
 }
