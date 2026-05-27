@@ -2,23 +2,25 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { apiRequest, getToken } from "../../api";
 
-const PETS = ["All Pets", "Dog", "Cat", "Rabbit", "Bird"];
-
 const PET_ICONS = {
   "All Pets": "🐾",
   Dog: "🐶",
   Cat: "🐱",
   Rabbit: "🐰",
   Bird: "🐦",
+  Hamster: "🐹",
+  Fish: "🐟",
 };
 
-const SEVERITIES = ["All Severity", "Critical", "Moderate", "Mild"];
+const SEVERITIES = ["All Severity", "Critical", "High", "Moderate", "Mild", "Low"];
 
 const SEVERITY_STYLES = {
   "All Severity": { bg: "#f3f4f6", color: "#6b7280" },
   Critical: { bg: "#FCEBEB", color: "#A32D2D" },
+  High: { bg: "#FCEBEB", color: "#A32D2D" },
   Moderate: { bg: "#FAEEDA", color: "#854F0B" },
   Mild: { bg: "#EAF3DE", color: "#3B6D11" },
+  Low: { bg: "#EAF3DE", color: "#3B6D11" },
 };
 
 const GUIDES_PER_PAGE = 9;
@@ -26,6 +28,7 @@ const GUIDES_PER_PAGE = 9;
 export default function EmergencySearch() {
   const [params] = useSearchParams();
 
+  const [petOptions, setPetOptions] = useState(["All Pets"]);
   const [pet, setPet] = useState(params.get("pet") || "All Pets");
   const [severity, setSeverity] = useState("All Severity");
   const [search, setSearch] = useState(params.get("keyword") || "");
@@ -79,6 +82,55 @@ export default function EmergencySearch() {
     }));
   }
 
+  // Load pet types from database
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadPetOptions() {
+      try {
+        const data = await apiRequest("/api/emergency-topics");
+
+        if (isCancelled) return;
+
+        const topics = data.topics || [];
+
+        const petMap = new Map();
+
+        topics.forEach((topic) => {
+          const petName = topic.petName?.trim();
+
+          if (!petName) return;
+
+          const key = petName.toLowerCase();
+
+          if (!petMap.has(key)) {
+            petMap.set(key, petName);
+          }
+        });
+
+        const databasePets = Array.from(petMap.values());
+
+        const sortedPets = databasePets.sort((a, b) => a.localeCompare(b));
+
+        setPetOptions(["All Pets", ...sortedPets]);
+
+        if (pet !== "All Pets" && !databasePets.includes(pet)) {
+          setPet("All Pets");
+        }
+      } catch (error) {
+        console.error("Load pet options error:", error);
+        setPetOptions(["All Pets"]);
+      }
+    }
+
+    loadPetOptions();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  // Load emergency topics
   useEffect(() => {
     let isCancelled = false;
 
@@ -157,7 +209,6 @@ export default function EmergencySearch() {
         setBookmarks(bookmarkIds);
       } catch (error) {
         if (isCancelled) return;
-
         console.error("Load bookmarks error:", error);
       }
     }
@@ -302,7 +353,7 @@ export default function EmergencySearch() {
 
   const getPageNumbers = () => {
     if (totalPages <= 7) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
     }
 
     const pages = [];
@@ -375,14 +426,14 @@ export default function EmergencySearch() {
           <p className="search-filter-label">Pet type</p>
 
           <div className="search-pet-pills">
-            {PETS.map((p) => (
+            {petOptions.map((item) => (
               <button
-                key={p}
+                key={item}
                 type="button"
-                className={`search-pet-pill ${pet === p ? "active" : ""}`}
-                onClick={() => handlePetChange(p)}
+                className={`search-pet-pill ${pet === item ? "active" : ""}`}
+                onClick={() => handlePetChange(item)}
               >
-                <span>{PET_ICONS[p]}</span> {p}
+                <span>{PET_ICONS[item] || "🐾"}</span> {item}
               </button>
             ))}
           </div>
@@ -392,13 +443,13 @@ export default function EmergencySearch() {
           <p className="search-filter-label">Severity</p>
 
           <div className="search-sev-pills">
-            {SEVERITIES.map((s) => {
-              const style = SEVERITY_STYLES[s];
-              const isActive = severity === s;
+            {SEVERITIES.map((item) => {
+              const style = SEVERITY_STYLES[item] || SEVERITY_STYLES.Moderate;
+              const isActive = severity === item;
 
               return (
                 <button
-                  key={s}
+                  key={item}
                   type="button"
                   className={`search-sev-pill ${isActive ? "active" : ""}`}
                   style={
@@ -410,9 +461,9 @@ export default function EmergencySearch() {
                         }
                       : {}
                   }
-                  onClick={() => handleSeverityChange(s)}
+                  onClick={() => handleSeverityChange(item)}
                 >
-                  {s}
+                  {item}
                 </button>
               );
             })}
@@ -483,8 +534,11 @@ export default function EmergencySearch() {
             <div className="search-active-filters">
               {pet !== "All Pets" && (
                 <span className="search-active-tag">
-                  {PET_ICONS[pet]} {pet}
-                  <button type="button" onClick={() => handlePetChange("All Pets")}>
+                  {PET_ICONS[pet] || "🐾"} {pet}
+                  <button
+                    type="button"
+                    onClick={() => handlePetChange("All Pets")}
+                  >
                     ✕
                   </button>
                 </span>
@@ -512,7 +566,11 @@ export default function EmergencySearch() {
               )}
             </div>
 
-            <button type="button" className="search-clear-all" onClick={clearSearch}>
+            <button
+              type="button"
+              className="search-clear-all"
+              onClick={clearSearch}
+            >
               Clear all
             </button>
           </div>
@@ -546,7 +604,11 @@ export default function EmergencySearch() {
             <h3>Unable to load guides</h3>
             <p>{error}</p>
 
-            <button type="button" className="search-empty-btn" onClick={retryLoadTopics}>
+            <button
+              type="button"
+              className="search-empty-btn"
+              onClick={retryLoadTopics}
+            >
               Try again
             </button>
           </div>
@@ -582,9 +644,6 @@ export default function EmergencySearch() {
                           isBookmarked ? "bookmarked" : ""
                         } ${isUpdating ? "updating" : ""}`}
                         onClick={() => toggleBookmark(guide.id, guide.title)}
-                        aria-label={
-                          isBookmarked ? "Remove bookmark" : "Add bookmark"
-                        }
                         disabled={isUpdating}
                         title={
                           isBookmarked ? "Remove bookmark" : "Save bookmark"
@@ -605,7 +664,8 @@ export default function EmergencySearch() {
                           background:
                             SEVERITY_STYLES[guide.severity]?.bg || "#f3f4f6",
                           color:
-                            SEVERITY_STYLES[guide.severity]?.color || "#6b7280",
+                            SEVERITY_STYLES[guide.severity]?.color ||
+                            "#6b7280",
                         }}
                       >
                         {guide.severity}
@@ -683,7 +743,11 @@ export default function EmergencySearch() {
               <h3>No guide found</h3>
               <p>Try a different keyword or reset your filters.</p>
 
-              <button type="button" className="search-empty-btn" onClick={clearSearch}>
+              <button
+                type="button"
+                className="search-empty-btn"
+                onClick={clearSearch}
+              >
                 Reset filters
               </button>
             </div>

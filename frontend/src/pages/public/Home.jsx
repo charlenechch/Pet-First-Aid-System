@@ -9,9 +9,8 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [selectedPet, setSelectedPet] = useState("");
   const [pets, setPets] = useState([]);
-  const [topTopics, setTopTopics] = useState([]);
-
-  const [loadingPets, setLoadingPets] = useState(true);
+  const [commonEmergencies, setCommonEmergencies] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const severityClass = {
     Critical: "red",
@@ -25,92 +24,114 @@ export default function Home() {
   useEffect(() => {
     let isCancelled = false;
 
-    async function fetchData() {
+    async function loadHomeData() {
       try {
-        setLoadingPets(true);
+        setLoading(true);
 
-        const res = await fetch(`${API_URL}/api/emergency-topics`);
+        const response = await fetch(`${API_URL}/api/emergency-topics`);
 
         let data = {};
         try {
-          data = await res.json();
+          data = await response.json();
         } catch {
           data = {};
         }
 
-        if (!res.ok) {
+        if (!response.ok) {
           throw new Error(data.message || "Failed to load emergency topics.");
         }
 
         if (isCancelled) return;
 
-        const topics = data.topics || [];
+        const topics = Array.isArray(data.topics) ? data.topics : [];
 
-        const petMap = {};
+        // ==========================
+        // PET TYPES FROM DATABASE
+        // ==========================
+        const petMap = new Map();
 
         topics.forEach((topic) => {
-          const petName = topic.petName || "Other";
+          const petName = topic.petName?.trim();
           const icon = topic.icon || "🐾";
 
-          if (!petMap[petName]) {
-            petMap[petName] = {
+          if (!petName) return;
+
+          const key = petName.toLowerCase();
+
+          if (!petMap.has(key)) {
+            petMap.set(key, {
               name: petName,
               icon,
-              count: 0,
-            };
+              count: 1,
+            });
+          } else {
+            const existingPet = petMap.get(key);
+            petMap.set(key, {
+              ...existingPet,
+              count: existingPet.count + 1,
+            });
           }
-
-          petMap[petName].count += 1;
         });
 
-        const petOrder = ["Dog", "Cat", "Rabbit", "Bird"];
+        const petList = Array.from(petMap.values()).sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
 
-        const sortedPets = [
-          ...petOrder
-            .filter((name) => petMap[name])
-            .map((name) => petMap[name]),
-          ...Object.values(petMap).filter(
-            (pet) => !petOrder.includes(pet.name)
-          ),
-        ];
+        setPets(petList);
 
-        setPets(sortedPets);
-
-        if (sortedPets.length > 0) {
+        if (petList.length > 0) {
           setSelectedPet((prev) => {
-            const stillExists = sortedPets.some((pet) => pet.name === prev);
-            return stillExists ? prev : sortedPets[0].name;
+            const stillExists = petList.some((pet) => pet.name === prev);
+            return stillExists ? prev : petList[0].name;
           });
         } else {
           setSelectedPet("");
         }
 
-        const top = topics
-          .filter(
-            (topic) =>
-              topic.severity === "Critical" ||
-              topic.severity === "High" ||
-              topic.severity === "Moderate"
-          )
+        // ==========================
+        // COMMON EMERGENCIES FROM DATABASE
+        // ==========================
+        const severityPriority = {
+          Critical: 1,
+          High: 2,
+          Moderate: 3,
+          Medium: 4,
+          Mild: 5,
+          Low: 6,
+        };
+
+        const databaseEmergencies = [...topics]
+          .sort((a, b) => {
+            const aPriority = severityPriority[a.severity] || 99;
+            const bPriority = severityPriority[b.severity] || 99;
+
+            if (aPriority !== bPriority) {
+              return aPriority - bPriority;
+            }
+
+            return String(a.topicTitle || "").localeCompare(
+              String(b.topicTitle || "")
+            );
+          })
           .slice(0, 4);
 
-        setTopTopics(top);
+        setCommonEmergencies(databaseEmergencies);
       } catch (error) {
         console.error("Load home data error:", error);
 
         if (!isCancelled) {
           setPets([]);
-          setTopTopics([]);
+          setCommonEmergencies([]);
           setSelectedPet("");
         }
       } finally {
         if (!isCancelled) {
-          setLoadingPets(false);
+          setLoading(false);
         }
       }
     }
 
-    fetchData();
+    loadHomeData();
 
     return () => {
       isCancelled = true;
@@ -136,9 +157,17 @@ export default function Home() {
     navigate(`/emergency-search?pet=${encodeURIComponent(selectedPet)}`);
   }
 
-  function severityIcon(severity) {
-    if (severity === "Critical" || severity === "High") return "🫀";
-    if (severity === "Moderate" || severity === "Medium") return "⚠️";
+  function getSeverityIcon(topic) {
+    if (topic.icon) return topic.icon;
+
+    if (topic.severity === "Critical" || topic.severity === "High") {
+      return "🚨";
+    }
+
+    if (topic.severity === "Moderate" || topic.severity === "Medium") {
+      return "⚠️";
+    }
+
     return "🌿";
   }
 
@@ -190,7 +219,9 @@ export default function Home() {
           <div className="home-hero-right">
             <div className="home-emergency-card">
               <div className="home-card-title">
-                <div className="home-dog-icon">🐶</div>
+                <div className="home-dog-icon">
+                  {commonEmergencies[0]?.icon || "🐾"}
+                </div>
 
                 <div>
                   <h3>Common emergencies</h3>
@@ -198,8 +229,12 @@ export default function Home() {
                 </div>
               </div>
 
-              {topTopics.length > 0 ? (
-                topTopics.map((topic) => (
+              {loading ? (
+                <div className="home-emergency-empty">
+                  Loading emergencies...
+                </div>
+              ) : commonEmergencies.length > 0 ? (
+                commonEmergencies.map((topic) => (
                   <Link
                     key={topic.emergencyID}
                     to={`/guide-details/${topic.emergencyID}`}
@@ -207,40 +242,15 @@ export default function Home() {
                       severityClass[topic.severity] || "amber"
                     }`}
                   >
-                    <span>{severityIcon(topic.severity)}</span>
-                    {topic.topicTitle} <b>›</b>
+                    <span>{getSeverityIcon(topic)}</span>
+                    {topic.topicTitle}
+                    <b>›</b>
                   </Link>
                 ))
               ) : (
-                <>
-                  <Link
-                    to="/emergency-search"
-                    className="home-emergency-item red"
-                  >
-                    <span>🫀</span> Choking / Breathing issues <b>›</b>
-                  </Link>
-
-                  <Link
-                    to="/emergency-search"
-                    className="home-emergency-item amber"
-                  >
-                    <span>💊</span> Poisoning / Toxic ingestion <b>›</b>
-                  </Link>
-
-                  <Link
-                    to="/emergency-search"
-                    className="home-emergency-item green"
-                  >
-                    <span>🌡️</span> Heatstroke / Overheating <b>›</b>
-                  </Link>
-
-                  <Link
-                    to="/emergency-search"
-                    className="home-emergency-item amber"
-                  >
-                    <span>🦴</span> Broken bone / Fracture <b>›</b>
-                  </Link>
-                </>
+                <div className="home-emergency-empty">
+                  No emergency guides found yet.
+                </div>
               )}
             </div>
           </div>
@@ -255,32 +265,34 @@ export default function Home() {
         <p>Get emergency guides tailored to your pet's species.</p>
 
         <div className="home-pet-grid">
-          {loadingPets && (
+          {loading && (
             <div className="home-pet-empty">
               Loading pet types from database...
             </div>
           )}
 
-          {!loadingPets && pets.length === 0 && (
+          {!loading && pets.length === 0 && (
             <div className="home-pet-empty">
               No pet types found yet. Please add emergency topics from admin.
             </div>
           )}
 
-          {!loadingPets &&
-            pets.map(({ name, icon, count }) => (
+          {!loading &&
+            pets.map((pet) => (
               <button
-                key={name}
+                key={pet.name}
                 type="button"
-                onClick={() => setSelectedPet(name)}
+                onClick={() => setSelectedPet(pet.name)}
                 className={`home-pet-card ${
-                  selectedPet === name ? "active" : ""
+                  selectedPet === pet.name ? "active" : ""
                 }`}
               >
-                <span>{icon || "🐾"}</span>
-                <h4>{name}</h4>
+                <span>{pet.icon || "🐾"}</span>
+
+                <h4>{pet.name}</h4>
+
                 <p>
-                  {count} {count === 1 ? "guide" : "guides"}
+                  {pet.count} {pet.count === 1 ? "guide" : "guides"}
                 </p>
               </button>
             ))}
