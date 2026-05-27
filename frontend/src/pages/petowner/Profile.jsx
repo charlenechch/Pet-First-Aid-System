@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { petTypes } from "../../data/petOwnerData";
 import "../../styles/admin.css";
-import "../../styles/adminProfile.css"; 
 import "../../styles/petOwner.css";
+import "../../styles/adminProfile.css"; 
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
