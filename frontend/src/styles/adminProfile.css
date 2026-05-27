@@ -448,8 +448,8 @@
   }
 
   .shared-profile-page .profile-card {
-    position: relative;
-    top: auto;
+    position: sticky;
+    top: 88px;
   }
 
   .shared-profile-page .profile-info-card,
@@ -457,6 +457,13 @@
   .shared-profile-page .profile-pets-card,
   .shared-profile-page .profile-activity-card {
     grid-column: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .shared-profile-page .profile-card {
+    position: relative;
+    top: auto;
   }
 }
 
