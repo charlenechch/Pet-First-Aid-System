@@ -14,7 +14,6 @@ function QuizList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Load quiz results from backend database
   useEffect(() => {
     let isCancelled = false;
 
@@ -31,15 +30,10 @@ function QuizList() {
           resultID: result.resultID,
           quizID: result.quizID,
           quizTitle: result.quizTitle,
-          description: result.description || "",
-          topicTitle: result.topicTitle || "First Aid Topic",
           pet: result.petName || "Pet",
           petEmoji: result.icon || "🐾",
-          severity: result.severity || "-",
           score: Number(result.score || 0),
-          totalQuestions: result.total_questions || "-",
           passed: Number(result.passed) === 1 || result.passed === true,
-          passingScore: result.pass_mark || 60,
           attemptedAt: result.attempted_at,
         }));
 
@@ -70,9 +64,7 @@ function QuizList() {
 
       const matchesSearch =
         result.quizTitle.toLowerCase().includes(keyword) ||
-        result.topicTitle.toLowerCase().includes(keyword) ||
-        result.pet.toLowerCase().includes(keyword) ||
-        result.description.toLowerCase().includes(keyword);
+        result.pet.toLowerCase().includes(keyword);
 
       const matchesStatus =
         statusFilter === "All" ||
@@ -83,10 +75,9 @@ function QuizList() {
     });
   }, [quizResults, searchKeyword, statusFilter]);
 
-  function goToQuiz(quizID) {
-    navigate(`/petowner/quizzes/${quizID}/attempt`);
-  }
-
+function goToPublicQuizPage() {
+  navigate("/quiz");
+}
   function formatDate(dateValue) {
     if (!dateValue) return "-";
 
@@ -117,8 +108,8 @@ function QuizList() {
           <div>
             <h2>Quiz Result History</h2>
             <p className="form-note">
-              View your completed quiz results from the database. You can also
-              retake a quiz by clicking the button beside each result.
+              View your quiz percentage result. Click the quiz button if you
+              want to do the quiz again.
             </p>
           </div>
         </div>
@@ -126,7 +117,7 @@ function QuizList() {
         <div className="filter-row">
           <input
             type="text"
-            placeholder="Search by quiz title, topic, or pet..."
+            placeholder="Search by quiz title or pet..."
             value={searchKeyword}
             onChange={(event) => setSearchKeyword(event.target.value)}
           />
@@ -159,12 +150,17 @@ function QuizList() {
           </div>
         )}
 
-        {!loading && !error && filteredResults.length > 0 ? (
-          <div className="quiz-list-grid">
+        {!loading && !error && filteredResults.length > 0 && (
+          <div className="quiz-result-compact-grid">
             {filteredResults.map((result) => (
-              <article key={result.resultID} className="quiz-card">
-                <div className="quiz-card-header">
-                  <h3>{result.quizTitle}</h3>
+              <article key={result.resultID} className="quiz-result-compact-card">
+                <div className="quiz-result-top">
+                  <div>
+                    <h3>{result.quizTitle}</h3>
+                    <p>
+                      {result.petEmoji} {result.pet}
+                    </p>
+                  </div>
 
                   <span
                     className={
@@ -177,71 +173,37 @@ function QuizList() {
                   </span>
                 </div>
 
-                <div className="quiz-card-meta-row">
-                  <span>
-                    {result.petEmoji} <strong>{result.pet}</strong>
-                  </span>
+                <div className="quiz-score-row">
+                  <div className="quiz-score-circle">
+                    <strong>{result.score}%</strong>
+                  </div>
 
-                  <span>
-                    📚 <strong>{result.topicTitle}</strong>
-                  </span>
-
-                  <span>
-                    ⚠️ <strong>{result.severity}</strong>
-                  </span>
+                  <div className="quiz-score-info">
+                    <span>Your Score</span>
+                    <p>Attempted on {formatDate(result.attemptedAt)}</p>
+                  </div>
                 </div>
 
-                <div className="quiz-card-meta-row" style={{ marginTop: "10px" }}>
-                  <span>
-                    📝 Score: <strong>{result.score}%</strong>
-                  </span>
-
-                  <span>
-                    📋 Questions: <strong>{result.totalQuestions}</strong>
-                  </span>
-
-                  <span>
-                    🎯 Pass Mark: <strong>{result.passingScore}%</strong>
-                  </span>
-                </div>
-
-                <p className="form-note" style={{ marginTop: "10px" }}>
-                  Attempted on: {formatDate(result.attemptedAt)}
-                </p>
-
-                {result.description && (
-                  <p className="form-note" style={{ marginTop: "8px" }}>
-                    {result.description}
-                  </p>
-                )}
-
-                <div className="quiz-card-footer">
-                  <span className="quiz-card-best-score">
-                    Result:{" "}
-                    <strong>{result.passed ? "Completed successfully" : "Need more practice"}</strong>
-                  </span>
-
-                  <button
-                    className="primary-btn"
-                    onClick={() => goToQuiz(result.quizID)}
-                  >
-                    Retake Quiz
-                  </button>
-                </div>
+                <button
+                type="button"
+                className="primary-btn quiz-result-link-btn"
+                onClick={goToPublicQuizPage}
+              >
+                Go to Quiz Page
+              </button>
               </article>
             ))}
           </div>
-        ) : (
-          !loading &&
-          !error && (
-            <div className="petowner-empty-state">
-              <span className="empty-icon">🧠</span>
-              <p>No quiz results found.</p>
-              <p className="form-note">
-                After you complete a quiz, your result will appear here.
-              </p>
-            </div>
-          )
+        )}
+
+        {!loading && !error && filteredResults.length === 0 && (
+          <div className="petowner-empty-state">
+            <span className="empty-icon">🧠</span>
+            <p>No quiz results found.</p>
+            <p className="form-note">
+              After you complete a quiz, your result will appear here.
+            </p>
+          </div>
         )}
       </section>
     </div>
