@@ -766,4 +766,263 @@ router.delete("/vet-advice/:id", async (req, res) => {
   }
 });
 
+// ============================================================
+// ADD THESE ROUTES TO backend/routes/admin.js
+// Paste above the `module.exports = router;` line
+// ============================================================
+
+// ============================================================
+// MEDIA  ->  /api/admin/media
+// ============================================================
+
+router.get("/media", async (req, res) => {
+  try {
+    const { guideID } = req.query;
+    const where = guideID ? "WHERE m.guideID = ?" : "";
+    const params = guideID ? [guideID] : [];
+    const [media] = await pool.query(
+      `SELECT m.mediaID, m.guideID, g.guideTitle, m.media_type, m.mediaTitle,
+              m.caption, m.mediaURL, m.mediaStatus, m.created_at
+       FROM media m
+       JOIN first_aid_guides g ON m.guideID = g.guideID
+       ${where}
+       ORDER BY m.created_at DESC`,
+      params
+    );
+    res.json({ message: "Media loaded.", media });
+  } catch (error) {
+    console.error("Admin get media error:", error);
+    res.status(500).json({ message: "Server error loading media.", error: error.message });
+  }
+});
+
+router.post("/media", async (req, res) => {
+  try {
+    const { guideID, media_type, mediaTitle, caption, mediaURL, mediaStatus } = req.body;
+    if (!guideID || !media_type || !mediaTitle || !mediaURL) {
+      return res.status(400).json({ message: "guideID, media_type, mediaTitle and mediaURL are required." });
+    }
+    if (!["image", "video"].includes(media_type.toLowerCase())) {
+      return res.status(400).json({ message: "media_type must be 'image' or 'video'." });
+    }
+    const [result] = await pool.query(
+      `INSERT INTO media (guideID, media_type, mediaTitle, caption, mediaURL, mediaStatus)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [guideID, media_type.toLowerCase(), mediaTitle, caption || null, mediaURL, mediaStatus || "Draft"]
+    );
+    res.status(201).json({ message: "Media created.", mediaID: result.insertId });
+  } catch (error) {
+    console.error("Admin create media error:", error);
+    res.status(500).json({ message: "Server error creating media.", error: error.message });
+  }
+});
+
+router.put("/media/:id", async (req, res) => {
+  try {
+    const { guideID, media_type, mediaTitle, caption, mediaURL, mediaStatus } = req.body;
+    if (!guideID || !media_type || !mediaTitle || !mediaURL) {
+      return res.status(400).json({ message: "guideID, media_type, mediaTitle and mediaURL are required." });
+    }
+    const [result] = await pool.query(
+      `UPDATE media SET guideID = ?, media_type = ?, mediaTitle = ?, caption = ?, mediaURL = ?, mediaStatus = ?
+       WHERE mediaID = ?`,
+      [guideID, media_type.toLowerCase(), mediaTitle, caption || null, mediaURL, mediaStatus || "Draft", req.params.id]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Media not found." });
+    res.json({ message: "Media updated." });
+  } catch (error) {
+    console.error("Admin update media error:", error);
+    res.status(500).json({ message: "Server error updating media.", error: error.message });
+  }
+});
+
+router.delete("/media/:id", async (req, res) => {
+  try {
+    const [result] = await pool.query("DELETE FROM media WHERE mediaID = ?", [req.params.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Media not found." });
+    res.json({ message: "Media deleted." });
+  } catch (error) {
+    console.error("Admin delete media error:", error);
+    res.status(500).json({ message: "Server error deleting media.", error: error.message });
+  }
+});
+
+// ============================================================
+// VETERINARY ADVICE  ->  /api/admin/vet-advice
+// ============================================================
+
+router.get("/vet-advice", async (req, res) => {
+  try {
+    const { guideID } = req.query;
+    const where = guideID ? "WHERE va.guideID = ?" : "";
+    const params = guideID ? [guideID] : [];
+    const [advice] = await pool.query(
+      `SELECT va.adviceID, va.guideID, g.guideTitle, va.advice_text,
+              va.urgency, va.adviceStatus, va.created_at
+       FROM veterinary_advice va
+       JOIN first_aid_guides g ON va.guideID = g.guideID
+       ${where}
+       ORDER BY va.created_at DESC`,
+      params
+    );
+    res.json({ message: "Vet advice loaded.", advice });
+  } catch (error) {
+    console.error("Admin get vet advice error:", error);
+    res.status(500).json({ message: "Server error loading vet advice.", error: error.message });
+  }
+});
+
+router.post("/vet-advice", async (req, res) => {
+  try {
+    const { guideID, advice_text, urgency, adviceStatus } = req.body;
+    if (!guideID || !advice_text) {
+      return res.status(400).json({ message: "guideID and advice_text are required." });
+    }
+    const [result] = await pool.query(
+      `INSERT INTO veterinary_advice (guideID, advice_text, urgency, adviceStatus)
+       VALUES (?, ?, ?, ?)`,
+      [guideID, advice_text, urgency || "General", adviceStatus || "Draft"]
+    );
+    res.status(201).json({ message: "Vet advice created.", adviceID: result.insertId });
+  } catch (error) {
+    console.error("Admin create vet advice error:", error);
+    res.status(500).json({ message: "Server error creating vet advice.", error: error.message });
+  }
+});
+
+router.put("/vet-advice/:id", async (req, res) => {
+  try {
+    const { guideID, advice_text, urgency, adviceStatus } = req.body;
+    if (!guideID || !advice_text) {
+      return res.status(400).json({ message: "guideID and advice_text are required." });
+    }
+    const [result] = await pool.query(
+      `UPDATE veterinary_advice SET guideID = ?, advice_text = ?, urgency = ?, adviceStatus = ?
+       WHERE adviceID = ?`,
+      [guideID, advice_text, urgency || "General", adviceStatus || "Draft", req.params.id]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Vet advice not found." });
+    res.json({ message: "Vet advice updated." });
+  } catch (error) {
+    console.error("Admin update vet advice error:", error);
+    res.status(500).json({ message: "Server error updating vet advice.", error: error.message });
+  }
+});
+
+router.delete("/vet-advice/:id", async (req, res) => {
+  try {
+    const [result] = await pool.query("DELETE FROM veterinary_advice WHERE adviceID = ?", [req.params.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Vet advice not found." });
+    res.json({ message: "Vet advice deleted." });
+  } catch (error) {
+    console.error("Admin delete vet advice error:", error);
+    res.status(500).json({ message: "Server error deleting vet advice.", error: error.message });
+  }
+});
+
+// ============================================================
+// QUESTIONS  ->  /api/admin/questions
+// ============================================================
+
+router.get("/questions", async (req, res) => {
+  try {
+    const { quizID } = req.query;
+    const where = quizID ? "WHERE q.quizID = ?" : "";
+    const params = quizID ? [quizID] : [];
+    const [questions] = await pool.query(
+      `SELECT q.questionID, q.quizID, q.text, q.order_num,
+              GROUP_CONCAT(a.answerID ORDER BY a.answerID) AS answerIDs,
+              GROUP_CONCAT(a.text ORDER BY a.answerID SEPARATOR '|||') AS answerTexts,
+              GROUP_CONCAT(a.is_correct ORDER BY a.answerID) AS answerCorrect
+       FROM questions q
+       LEFT JOIN answers a ON a.questionID = q.questionID
+       ${where}
+       GROUP BY q.questionID
+       ORDER BY q.order_num ASC`,
+      params
+    );
+    res.json({ message: "Questions loaded.", questions });
+  } catch (error) {
+    console.error("Admin get questions error:", error);
+    res.status(500).json({ message: "Server error loading questions.", error: error.message });
+  }
+});
+
+router.post("/questions", async (req, res) => {
+  try {
+    const { quizID, text, options, correctAnswer, order_num } = req.body;
+    if (!quizID || !text || !options || options.length < 2 || !correctAnswer) {
+      return res.status(400).json({ message: "quizID, text, options (min 2) and correctAnswer are required." });
+    }
+    const [qResult] = await pool.query(
+      "INSERT INTO questions (quizID, text, order_num) VALUES (?, ?, ?)",
+      [quizID, text, order_num || 0]
+    );
+    const questionID = qResult.insertId;
+    for (const option of options) {
+      await pool.query(
+        "INSERT INTO answers (questionID, text, is_correct) VALUES (?, ?, ?)",
+        [questionID, option, option === correctAnswer ? 1 : 0]
+      );
+    }
+    res.status(201).json({ message: "Question created.", questionID });
+  } catch (error) {
+    console.error("Admin create question error:", error);
+    res.status(500).json({ message: "Server error creating question.", error: error.message });
+  }
+});
+
+router.put("/questions/:id", async (req, res) => {
+  try {
+    const { text, options, correctAnswer, order_num } = req.body;
+    if (!text || !options || options.length < 2 || !correctAnswer) {
+      return res.status(400).json({ message: "text, options (min 2) and correctAnswer are required." });
+    }
+    await pool.query("UPDATE questions SET text = ?, order_num = ? WHERE questionID = ?", [text, order_num || 0, req.params.id]);
+    await pool.query("DELETE FROM answers WHERE questionID = ?", [req.params.id]);
+    for (const option of options) {
+      await pool.query(
+        "INSERT INTO answers (questionID, text, is_correct) VALUES (?, ?, ?)",
+        [req.params.id, option, option === correctAnswer ? 1 : 0]
+      );
+    }
+    res.json({ message: "Question updated." });
+  } catch (error) {
+    console.error("Admin update question error:", error);
+    res.status(500).json({ message: "Server error updating question.", error: error.message });
+  }
+});
+
+router.delete("/questions/:id", async (req, res) => {
+  try {
+    const [result] = await pool.query("DELETE FROM questions WHERE questionID = ?", [req.params.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: "Question not found." });
+    res.json({ message: "Question deleted." });
+  } catch (error) {
+    console.error("Admin delete question error:", error);
+    res.status(500).json({ message: "Server error deleting question.", error: error.message });
+  }
+});
+
+// ============================================================
+// QUIZ RESULTS  ->  /api/admin/quiz-results
+// ============================================================
+
+router.get("/quiz-results", async (req, res) => {
+  try {
+    const [results] = await pool.query(
+      `SELECT qr.resultID, qr.userID, u.name AS userName, qr.quizID,
+              qz.quizTitle, qr.score, qr.total_questions, qr.passed, qr.attempted_at
+       FROM quiz_results qr
+       JOIN users u ON qr.userID = u.userID
+       JOIN quizzes qz ON qr.quizID = qz.quizID
+       ORDER BY qr.attempted_at DESC`
+    );
+    res.json({ message: "Quiz results loaded.", results });
+  } catch (error) {
+    console.error("Admin get quiz results error:", error);
+    res.status(500).json({ message: "Server error loading quiz results.", error: error.message });
+  }
+});
+
 module.exports = router;

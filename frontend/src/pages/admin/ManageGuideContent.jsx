@@ -21,10 +21,11 @@ function ManageGuideContent() {
   const [stepForm, setStepForm] = useState({ index: null, instruction: "" });
   const [mediaForm, setMediaForm] = useState({ id: null, guideId: "", type: "Image", title: "", url: "", caption: "", status: "Draft" });
   const [adviceForm, setAdviceForm] = useState({ id: null, guideId: "", advice: "", urgency: "General", status: "Draft" });
+  const [viewGuide, setViewGuide] = useState(null);
 
   const [guideSearch, setGuideSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [topicFilter, setTopicFilter] = useState("All");
+  const [petFilter, setPetFilter] = useState("All");
 
   const token = localStorage.getItem("token");
 
@@ -32,16 +33,21 @@ function ManageGuideContent() {
   useEffect(() => {
     async function fetchAll() {
       try {
-        const [topicsRes, petsRes, guidesRes, mediaRes, adviceRes] = await Promise.all([
-          fetch(`${API_URL}/api/admin/emergency-cases`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_URL}/api/admin/pets`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_URL}/api/admin/guides`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_URL}/api/admin/media`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_URL}/api/admin/vet-advice`, { headers: { Authorization: `Bearer ${token}` } }),
-        ]);
-        const [t, p, g, m, a] = await Promise.all([
-          topicsRes.json(), petsRes.json(), guidesRes.json(), mediaRes.json(), adviceRes.json()
-        ]);
+        const headers = { Authorization: `Bearer ${token}` };
+        const urls = [
+          `${API_URL}/api/admin/emergency-cases`,
+          `${API_URL}/api/admin/pets`,
+          `${API_URL}/api/admin/guides`,
+          `${API_URL}/api/admin/media`,
+          `${API_URL}/api/admin/vet-advice`,
+        ];
+        const responses = await Promise.all(urls.map((url) => fetch(url, { headers })));
+        for (let i = 0; i < responses.length; i++) {
+          if (!responses[i].ok) {
+            throw new Error(`Route not found: ${urls[i]} (${responses[i].status})`);
+          }
+        }
+        const [t, p, g, m, a] = await Promise.all(responses.map((r) => r.json()));
         setEmergencyTopics((t.cases || []).map((c) => ({ id: c.emergencyID, title: c.topicTitle, petID: c.petID, severity: c.severity, status: c.status })));
         setPets((p.pets || []).map((pt) => ({ id: pt.petID, name: pt.petName, emoji: pt.icon || "🐾", status: pt.status })));
         setGuides((g.guides || []).map((gd) => ({
@@ -80,13 +86,13 @@ function ManageGuideContent() {
         guide.overview.toLowerCase().includes(keyword) ||
         guide.topicTitle?.toLowerCase().includes(keyword);
       const matchesStatus = statusFilter === "All" || guide.status === statusFilter;
-      const matchesTopic = topicFilter === "All" || guide.topicId === Number(topicFilter);
-      return matchesSearch && matchesStatus && matchesTopic;
+      const topic = emergencyTopics.find((t) => t.id === guide.topicId);
+      const matchesPet = petFilter === "All" || (topic && topic.petID === Number(petFilter));
+      return matchesSearch && matchesStatus && matchesPet;
     });
-  }, [guides, guideSearch, statusFilter, topicFilter]);
+  }, [guides, guideSearch, statusFilter, petFilter, emergencyTopics]);
 
   function getGuideById(guideId) { return guides.find((g) => g.id === Number(guideId)); }
-  function getStepCount(guideId) { const g = getGuideById(guideId); return g?.steps?.length || 0; }
   function getMediaSummary(guideId) {
     const active = mediaList.filter((m) => m.guideId === guideId);
     const img = active.filter((m) => m.type === "Image").length;
@@ -319,6 +325,7 @@ function ManageGuideContent() {
         <>
           <div className="floating-menu-backdrop" onClick={closeActionMenu} />
           <div className="floating-action-menu" style={{ left: `${actionMenu.left}px`, top: `${actionMenu.top}px` }}>
+            <button onClick={() => { setViewGuide(guide); closeActionMenu(); }}>View Details</button>
             <button onClick={() => openEditGuideModal(guide)}>Edit Guide</button>
             <button onClick={() => { handleToggleGuideStatus(guide.id); closeActionMenu(); }}>
               {guide.status === "Published" ? "Move to Draft" : "Publish"}
@@ -364,6 +371,53 @@ function ManageGuideContent() {
     }
 
     return null;
+  }
+
+
+  // ── View Details modal ────────────────────────────────────
+  function renderViewDetailsModal() {
+    if (!viewGuide) return null;
+    const steps = viewGuide.steps || [];
+    return (
+      <div className="modal-backdrop" onClick={() => setViewGuide(null)}>
+        <section className="admin-modal mgc-large-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <div>
+              <p className="page-subtitle">{viewGuide.topicTitle}</p>
+              <h2>{viewGuide.title}</h2>
+            </div>
+            <button className="modal-close-btn" onClick={() => setViewGuide(null)}>×</button>
+          </div>
+
+          {viewGuide.overview && (
+            <p style={{ marginBottom: "1.5rem", color: "var(--text-secondary, #666)" }}>{viewGuide.overview}</p>
+          )}
+
+          <div className="admin-form-group">
+            <p className="admin-form-label">First-Aid Steps</p>
+            {steps.length === 0 ? (
+              <p className="empty-table-text">No steps added yet.</p>
+            ) : (
+              <div className="mgc-step-list">
+                {steps.map((step, i) => (
+                  <div key={i} className="mgc-step-card">
+                    <div className="mgc-step-info">
+                      <strong className="mgc-step-title">Step {i + 1}</strong>
+                      <p className="mgc-step-text">{step}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="form-actions" style={{ marginTop: "1.5rem" }}>
+            <button className="secondary-btn" onClick={() => setViewGuide(null)}>Close</button>
+            <button className="primary-btn" onClick={() => { openEditGuideModal(viewGuide); setViewGuide(null); }}>Edit Guide</button>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   // ── Guide modal ───────────────────────────────────────────
@@ -449,8 +503,17 @@ function ManageGuideContent() {
   }
 
   // ── Media modal ───────────────────────────────────────────
+  function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setMediaForm((prev) => ({ ...prev, url: reader.result }));
+    reader.readAsDataURL(file);
+  }
+
   function renderMediaModal() {
     if (modalType !== "media") return null;
+    const isImage = mediaForm.type === "Image";
     return (
       <div className="modal-backdrop" onClick={closeModal}>
         <section className="admin-modal" onClick={(e) => e.stopPropagation()}>
@@ -468,7 +531,7 @@ function ManageGuideContent() {
             </label>
             <label>
               Media Type
-              <select value={mediaForm.type} onChange={(e) => setMediaForm({ ...mediaForm, type: e.target.value })}>
+              <select value={mediaForm.type} onChange={(e) => setMediaForm({ ...mediaForm, type: e.target.value, url: "" })}>
                 <option value="Image">Image</option>
                 <option value="Video">Video</option>
               </select>
@@ -477,10 +540,25 @@ function ManageGuideContent() {
               Media Title
               <input type="text" placeholder="Example: Choking first-aid demonstration" value={mediaForm.title} onChange={(e) => setMediaForm({ ...mediaForm, title: e.target.value })} />
             </label>
-            <label>
-              URL / File Path
-              <input type="text" placeholder="https://example.com/video" value={mediaForm.url} onChange={(e) => setMediaForm({ ...mediaForm, url: e.target.value })} />
-            </label>
+
+            {isImage ? (
+              <label>
+                Upload Image
+                <input type="file" accept="image/*" onChange={handleImageUpload} style={{ padding: "8px 0" }} />
+                {mediaForm.url && mediaForm.url.startsWith("data:") && (
+                  <img src={mediaForm.url} alt="preview" style={{ marginTop: 10, maxHeight: 160, borderRadius: 8, objectFit: "cover", width: "100%" }} />
+                )}
+                {mediaForm.url && !mediaForm.url.startsWith("data:") && (
+                  <p className="form-note" style={{ marginTop: 6 }}>Current: <a href={mediaForm.url} target="_blank" rel="noreferrer">View image</a></p>
+                )}
+              </label>
+            ) : (
+              <label>
+                Video URL
+                <input type="text" placeholder="https://example.com/video" value={mediaForm.url} onChange={(e) => setMediaForm({ ...mediaForm, url: e.target.value })} />
+              </label>
+            )}
+
             <label>
               Caption
               <textarea rows="3" placeholder="Short description for this media" value={mediaForm.caption} onChange={(e) => setMediaForm({ ...mediaForm, caption: e.target.value })} />
@@ -557,6 +635,7 @@ function ManageGuideContent() {
     <div className="admin-page manage-guide-page">
       {renderFloatingActionMenu()}
       {renderGuideModal()}
+      {renderViewDetailsModal()}
       {renderMediaModal()}
       {renderAdviceModal()}
 
@@ -584,10 +663,10 @@ function ManageGuideContent() {
             <button className="primary-btn table-add-btn" onClick={openAddGuideModal}>+ Add Guide</button>
           </div>
           <div className="filter-row guide-filter-row">
-            <input type="text" placeholder="Search by guide title or topic..." value={guideSearch} onChange={(e) => setGuideSearch(e.target.value)} />
-            <select value={topicFilter} onChange={(e) => setTopicFilter(e.target.value)}>
-              <option value="All">All Topics</option>
-              {emergencyTopics.map((t) => (<option key={t.id} value={t.id}>{t.title}</option>))}
+            <input type="text" placeholder="Search by guide title or pet type..." value={guideSearch} onChange={(e) => setGuideSearch(e.target.value)} />
+            <select value={petFilter} onChange={(e) => setPetFilter(e.target.value)}>
+              <option value="All">All Pet Types</option>
+              {pets.map((p) => (<option key={p.id} value={p.id}>{p.emoji} {p.name}</option>))}
             </select>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="All">All Status</option>
@@ -599,7 +678,7 @@ function ManageGuideContent() {
           <div className="table-responsive">
             <table className="admin-table guide-table">
               <thead>
-                <tr><th>Guide Title</th><th>Emergency Topic</th><th>Pet Type</th><th>Steps</th><th>Media</th><th>Status</th><th>Actions</th></tr>
+                <tr><th>Guide Title</th><th>Emergency Topic</th><th>Pet Type</th><th>Media</th><th>Status</th><th>Actions</th></tr>
               </thead>
               <tbody>
                 {filteredGuides.length > 0 ? filteredGuides.map((guide) => (
@@ -607,13 +686,12 @@ function ManageGuideContent() {
                     <td><strong className="cell-title">{guide.title}</strong><p className="table-small-text">{guide.overview}</p></td>
                     <td>{guide.topicTitle}</td>
                     <td><span className="long-table-text">{getPetNameForTopic(guide.topicId)}</span></td>
-                    <td>{getStepCount(guide.id)}</td>
                     <td><span className="long-table-text">{getMediaSummary(guide.id)}</span></td>
                     <td><span className={guide.status === "Published" ? "status-badge" : "status-badge draft"}>{guide.status}</span></td>
                     <td><button className="three-dot-btn" onClick={(e) => openActionMenu(e, "guide", guide.id)}>⋯</button></td>
                   </tr>
                 )) : (
-                  <tr><td colSpan="7" className="empty-table-text">No guides found.</td></tr>
+                  <tr><td colSpan="6" className="empty-table-text">No guides found.</td></tr>
                 )}
               </tbody>
             </table>
@@ -637,7 +715,7 @@ function ManageGuideContent() {
               <tbody>
                 {mediaList.length > 0 ? mediaList.map((media) => (
                   <tr key={media.id}>
-                    <td><strong className="cell-title">{media.title}</strong><p className="table-small-text">{media.url}</p></td>
+                    <td><strong className="cell-title">{media.title}</strong></td>
                     <td>{media.guideTitle}</td>
                     <td>{media.type}</td>
                     <td><span className="long-table-text">{media.caption}</span></td>
