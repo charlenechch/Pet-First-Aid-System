@@ -28,13 +28,38 @@ function formatSteps(steps) {
   if (!steps) return [];
 
   if (Array.isArray(steps)) {
-    return steps;
+    return steps
+      .map((step) => String(step).trim())
+      .filter(Boolean);
   }
 
-  return String(steps)
-    .split("\n")
-    .map((step) => step.trim())
-    .filter(Boolean);
+  const raw = String(steps).trim();
+
+  // If backend/database stores steps as JSON array string
+  try {
+    const parsed = JSON.parse(raw);
+
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((step) => String(step).trim())
+        .filter(Boolean);
+    }
+  } catch {
+    // Continue to normal text handling below
+  }
+
+  // If admin stores steps line by line
+  return raw
+    .split(/\r?\n/)
+    .map((step) =>
+      step
+        .trim()
+        .replace(/^\[|\]$/g, "")
+        .replace(/^["']|["'],?$/g, "")
+        .replace(/,$/, "")
+        .trim()
+    )
+    .filter((step) => step && step !== "[" && step !== "]");
 }
 
 export default function GuideDetails() {
