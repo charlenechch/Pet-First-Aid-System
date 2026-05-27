@@ -4,6 +4,39 @@ import { apiRequest, getToken } from "../../api";
 
 const GUIDES_PER_PAGE = 5;
 
+function getEmbedUrl(url) {
+  if (!url) return "";
+
+  if (url.includes("youtube.com/watch?v=")) {
+    const videoId = url.split("v=")[1]?.split("&")[0];
+    return `https://www.youtube.com/embed/${videoId}`;
+  }
+
+  if (url.includes("youtu.be/")) {
+    const videoId = url.split("youtu.be/")[1]?.split("?")[0];
+    return `https://www.youtube.com/embed/${videoId}`;
+  }
+
+  if (url.includes("youtube.com/embed/")) {
+    return url;
+  }
+
+  return url;
+}
+
+function formatSteps(steps) {
+  if (!steps) return [];
+
+  if (Array.isArray(steps)) {
+    return steps;
+  }
+
+  return String(steps)
+    .split("\n")
+    .map((step) => step.trim())
+    .filter(Boolean);
+}
+
 export default function GuideDetails() {
   const { id } = useParams();
 
@@ -73,6 +106,9 @@ export default function GuideDetails() {
 
     async function loadGuideDetails() {
       try {
+        setLoading(true);
+        setError("");
+
         const data = await apiRequest(`/api/emergency-topics/${id}`);
 
         if (isCancelled) return;
@@ -81,6 +117,7 @@ export default function GuideDetails() {
 
         const formattedGuide = {
           id: String(topic.emergencyID),
+          guideID: topic.guideID,
           icon: topic.icon || "🐾",
           title: topic.topicTitle,
           pet: topic.petName || "Pet",
@@ -88,20 +125,14 @@ export default function GuideDetails() {
           desc: topic.topicDesc || "",
           condition: topic.topicTitle || "",
           signs: topic.signs || [],
-          steps: Array.isArray(topic.steps)
-            ? topic.steps
-            : topic.steps
-            ? String(topic.steps)
-                .split("\n")
-                .filter((step) => step.trim() !== "")
-            : [],
+          steps: formatSteps(topic.steps),
           advice:
             topic.advice_text ||
             "Please contact a veterinarian immediately for professional advice.",
+          media: Array.isArray(topic.media) ? topic.media : [],
         };
 
         setGuide(formattedGuide);
-        setError("");
       } catch (error) {
         if (isCancelled) return;
 
@@ -144,7 +175,6 @@ export default function GuideDetails() {
         setOtherGuides(formattedGuides);
       } catch (error) {
         if (isCancelled) return;
-
         console.error("Load other guides error:", error);
       }
     }
@@ -176,7 +206,6 @@ export default function GuideDetails() {
         setBookmarks(bookmarkIds);
       } catch (error) {
         if (isCancelled) return;
-
         console.error("Load bookmarks error:", error);
       }
     }
@@ -302,7 +331,7 @@ export default function GuideDetails() {
     : String(guide.pet)
         .split(/[,/]/)
         .map((pet) => pet.trim().toLowerCase())
-        .filter((pet) => pet !== "");
+        .filter(Boolean);
 
   const totalPages = Math.max(
     1,
@@ -412,12 +441,16 @@ export default function GuideDetails() {
             </div>
           )}
 
+          {guide.desc && (
+            <div className="guide-signs-section">
+              <h2>Overview</h2>
+              <p>{guide.desc}</p>
+            </div>
+          )}
+
           {guide.signs && guide.signs.length > 0 && (
             <div className="guide-signs-section">
-              <h2>
-                Signs your pet is{" "}
-                {guide.condition ?? guide.title.toLowerCase()}
-              </h2>
+              <h2>Signs your pet is {guide.condition}</h2>
 
               <div className="guide-signs-grid">
                 {guide.signs.map((sign, index) => (
@@ -444,9 +477,55 @@ export default function GuideDetails() {
             </p>
           )}
 
-          <div className="guide-video-box">
-            ▶️ Video / Image Guide Placeholder
-          </div>
+          {guide.media && guide.media.length > 0 ? (
+            <div className="guide-media-section">
+              <h2>Video / Image Guide</h2>
+
+              {guide.media.map((item) => {
+                const mediaType = String(item.media_type || "").toLowerCase();
+                const isVideo = mediaType === "video";
+                const isImage = mediaType === "image";
+
+                return (
+                  <div key={item.mediaID} className="guide-media-card">
+                    <h3>{item.mediaTitle || "Guide Media"}</h3>
+
+                    {item.caption && <p>{item.caption}</p>}
+
+                    {isVideo ? (
+                      <div className="guide-video-frame">
+                        <iframe
+                          src={getEmbedUrl(item.mediaURL)}
+                          title={item.mediaTitle || "Guide video"}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    ) : isImage ? (
+                      <img
+                        src={item.mediaURL}
+                        alt={item.mediaTitle || "Guide media"}
+                        className="guide-media-image"
+                      />
+                    ) : (
+                      <a
+                        href={item.mediaURL}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="home-btn-fill"
+                      >
+                        Open media
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="guide-video-box">
+              ▶️ No video or image guide added yet.
+            </div>
+          )}
 
           <div className="guide-feedback-box">
             <p className="guide-feedback-title">Was this guide helpful?</p>

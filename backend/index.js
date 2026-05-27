@@ -286,35 +286,44 @@ app.get("/api/emergency-topics", async (req, res) => {
   }
 });
 
-// GET ONE EMERGENCY TOPIC DETAILS
-app.get("/api/emergency-topics/:emergencyID", async (req, res) => {
+// GET ONE EMERGENCY TOPIC DETAILS + GUIDE + MEDIA
+app.get("/api/emergency-topics/:id", async (req, res) => {
   try {
-    const { emergencyID } = req.params;
+    const { id } = req.params;
 
     const [topics] = await pool.query(
       `
-      SELECT 
+      SELECT
         e.emergencyID,
         e.topicTitle,
         e.topicDesc,
         e.severity,
         e.keywords,
+        e.status,
+
+        p.petID,
         p.petName,
         p.icon,
+
         g.guideID,
         g.guideTitle,
         g.overview,
         g.steps,
-        va.advice_text,
-        va.urgency
+        g.status AS guideStatus,
+
+        va.advice_text
       FROM emergency_cases e
       JOIN pets p ON e.petID = p.petID
-      LEFT JOIN first_aid_guides g ON e.emergencyID = g.emergencyID
-      LEFT JOIN veterinary_advice va ON g.guideID = va.guideID
+      LEFT JOIN first_aid_guides g 
+        ON e.emergencyID = g.emergencyID
+      LEFT JOIN veterinary_advice va
+        ON g.guideID = va.guideID
+        AND LOWER(va.adviceStatus) = 'published'
       WHERE e.emergencyID = ?
-      AND e.status = 'Published'
+        AND e.status = 'Published'
+      LIMIT 1
       `,
-      [emergencyID]
+      [id]
     );
 
     if (topics.length === 0) {
@@ -325,30 +334,46 @@ app.get("/api/emergency-topics/:emergencyID", async (req, res) => {
 
     const topic = topics[0];
 
-    let steps = [];
+    let media = [];
 
-    try {
-      steps = topic.steps ? JSON.parse(topic.steps) : [];
-    } catch {
-      steps = topic.steps ? topic.steps.split("\n") : [];
+    if (topic.guideID) {
+      const [mediaRows] = await pool.query(
+        `
+        SELECT
+          mediaID,
+          guideID,
+          media_type,
+          mediaTitle,
+          caption,
+          mediaURL,
+          mediaStatus
+        FROM media
+        WHERE guideID = ?
+          AND LOWER(mediaStatus) = 'published'
+        ORDER BY mediaID DESC
+        `,
+        [topic.guideID]
+      );
+
+      media = mediaRows;
     }
 
     res.json({
-      message: "Emergency topic details loaded successfully.",
+      message: "Emergency topic loaded successfully.",
       topic: {
         ...topic,
-        steps,
+        media,
       },
     });
   } catch (error) {
-    console.error("Get topic details error:", error);
+    console.error("Get emergency topic details error:", error);
+
     res.status(500).json({
-      message: "Server error while loading topic details.",
+      message: "Server error while loading emergency topic.",
       error: error.message,
     });
   }
 });
-
 
 // ==========================
 // PUBLIC FEEDBACK
