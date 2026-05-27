@@ -1806,3 +1806,216 @@ textarea {
     padding: 13px 14px;
   }
 }
+
+/* ADMIN PROFILE PAGE  */
+.admin-page .profile-layout {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+/* Top profile card full width */
+.admin-page .profile-card {
+  width: 100%;
+  max-width: 100%;
+  background: #ffffff;
+  border: 1px solid var(--admin-border);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(37, 48, 41, 0.04);
+}
+
+/* Cover area */
+.admin-page .profile-cover {
+  height: 100px;
+  background: linear-gradient(135deg, #fff1e8 0%, #e8f4df 100%);
+  position: relative;
+}
+
+/* Main user info */
+.admin-page .profile-main-info {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 24px 22px;
+  border-bottom: 1px solid #f0eee9;
+}
+
+.admin-page .profile-avatar-wrap {
+  margin-top: -34px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.admin-page .profile-avatar {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #eef7e9, #fff5e8);
+  border: 4px solid #ffffff;
+  color: var(--admin-green-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(37, 48, 41, 0.12);
+}
+
+.admin-page .profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-page .profile-name-area {
+  min-width: 0;
+  padding-top: 18px;
+}
+
+.admin-page .profile-name-area h2 {
+  margin: 0 0 4px;
+  font-family: "Playfair Display", serif;
+  font-size: 26px;
+  color: var(--admin-text);
+}
+
+.admin-page .profile-name-area p {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.admin-page .profile-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Bio */
+.admin-page .profile-bio {
+  margin: 0;
+  padding: 22px 24px;
+  color: var(--admin-muted);
+  line-height: 1.6;
+}
+
+/* Buttons */
+.admin-page .profile-action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 0 24px 24px;
+}
+
+.admin-page .profile-action-row .primary-btn,
+.admin-page .profile-action-row .secondary-btn {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Account info and security should be centered, not pushed right */
+.admin-page .profile-info-card,
+.admin-page .profile-security-card {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid var(--admin-border);
+  border-radius: 20px;
+  padding: 26px;
+  box-shadow: 0 10px 28px rgba(37, 48, 41, 0.04);
+}
+
+.admin-page .profile-info-card h2,
+.admin-page .profile-security-card h2 {
+  margin: 0 0 20px;
+  font-family: "Playfair Display", serif;
+  font-size: 24px;
+  color: var(--admin-text);
+}
+
+.admin-page .profile-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-page .profile-info-item {
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 16px;
+  background: #fffefa;
+  min-width: 0;
+}
+
+.admin-page .profile-info-item span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.admin-page .profile-info-item strong {
+  display: block;
+  color: var(--admin-text);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+/* Security rows */
+.admin-page .profile-security-card > div {
+  background: #fffefa;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-page .profile-main-info {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 0 20px 20px;
+  }
+
+  .admin-page .profile-name-area {
+    padding-top: 0;
+  }
+
+  .admin-page .profile-action-row {
+    grid-template-columns: 1fr;
+    padding: 0 20px 22px;
+  }
+
+  .admin-page .profile-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-page .profile-info-card,
+  .admin-page .profile-security-card {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-page .profile-cover {
+    height: 82px;
+  }
+
+  .admin-page .profile-avatar {
+    width: 74px;
+    height: 74px;
+    font-size: 26px;
+  }
+
+  .admin-page .profile-name-area h2 {
+    font-size: 24px;
+  }
+}
