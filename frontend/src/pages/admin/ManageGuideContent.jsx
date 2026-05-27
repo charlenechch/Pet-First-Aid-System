@@ -506,8 +506,22 @@ function ManageGuideContent() {
   function handleImageUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
+
+    const maxSize = 500 * 1024; // 500KB
+
+    if (file.size > maxSize) {
+      alert("Image is too large. Please upload an image smaller than 500KB.");
+      e.target.value = "";
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = () => setMediaForm((prev) => ({ ...prev, url: reader.result }));
+    reader.onload = () =>
+      setMediaForm((prev) => ({
+        ...prev,
+        url: reader.result,
+      }));
+
     reader.readAsDataURL(file);
   }
 
