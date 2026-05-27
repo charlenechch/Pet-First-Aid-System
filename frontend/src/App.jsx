@@ -5,6 +5,9 @@ import Navbar from "./components/public/Navbar";
 import Footer from "./components/public/Footer";
 import ScrollToTop from "./components/public/ScrollToTop";
 
+// RBAC guard
+import ProtectedRoute from "./components/ProtectedRoute";
+
 // Admin layout
 import AdminLayout from "./layouts/AdminLayout";
 
@@ -55,30 +58,30 @@ function App() {
     <>
       <ScrollToTop />
 
-      {/* Show public Navbar only for public pages */}
       {!isAdminRoute && !isPetOwnerRoute && <Navbar />}
 
       <Routes>
         {/* ================= PUBLIC ROUTES ================= */}
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
-
-        {/* 7.1 and 7.2: Search, filter, bookmark emergency topics */}
         <Route path="/emergency-search" element={<EmergencySearch />} />
         <Route path="/topics" element={<EmergencySearch />} />
-
-        {/* Emergency topic details */}
         <Route path="/guide-details/:id" element={<GuideDetails />} />
-
         <Route path="/feedback" element={<PublicFeedback />} />
         <Route path="/quiz" element={<Quiz />} />
-
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* ================= ADMIN ROUTES ================= */}
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="pet-topics" element={<ManagePetEmergency />} />
@@ -90,22 +93,22 @@ function App() {
         </Route>
 
         {/* ================= PET OWNER ROUTES ================= */}
-        <Route path="/petowner" element={<PetOwnerLayout />}>
+        <Route
+          path="/petowner"
+          element={
+            <ProtectedRoute allowedRole="pet_owner">
+              <PetOwnerLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="/petowner/dashboard" replace />} />
           <Route path="dashboard" element={<PetOwnerDashboard />} />
           <Route path="profile" element={<Profile />} />
-
-          {/* Pet owner can also access emergency search inside layout */}
           <Route path="emergency-search" element={<EmergencySearch />} />
-
-          {/* 7.1: Pet owner bookmarks emergency topic */}
           <Route path="bookmarks" element={<Bookmark />} />
-
-          {/* 7.4: Pet owner attempts quiz and views result */}
           <Route path="quizzes" element={<QuizList />} />
           <Route path="quizzes/:quizId/attempt" element={<QuizAttempt />} />
           <Route path="quizzes/:quizId/result" element={<QuizResult />} />
-
           <Route path="feedback" element={<PetOwnerFeedback />} />
         </Route>
 
@@ -113,7 +116,6 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* Hide footer on admin, pet owner and auth pages */}
       {!hideFooter && <Footer />}
     </>
   );
