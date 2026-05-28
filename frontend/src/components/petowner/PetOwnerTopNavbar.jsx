@@ -58,10 +58,18 @@ function PetOwnerTopNavbar({ onMenuClick }) {
     setShowLogoutModal(false);
     setShowLogoutSuccess(true);
 
-    setTimeout(() => {
-      setShowLogoutSuccess(false);
-      navigate("/", { replace: true });
-    }, 1200);
+   setTimeout(() => {
+  setShowLogoutSuccess(false);
+  navigate("/", { replace: true });
+
+  setTimeout(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "auto",
+    });
+  }, 0);
+}, 1200);
   }
 
   function handleGoHome() {

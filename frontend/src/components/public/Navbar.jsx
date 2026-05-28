@@ -65,19 +65,27 @@ export default function Navbar() {
     setShowLogoutModal(false);
   };
 
-  const handleLogoutConfirm = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+const handleLogoutConfirm = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
 
-    setShowLogoutModal(false);
-    setShowLogoutSuccess(true);
+  setShowLogoutModal(false);
+  setShowLogoutSuccess(true);
 
-    navigate("/", { replace: true });
+  navigate("/", { replace: true });
 
-    setTimeout(() => {
-      setShowLogoutSuccess(false);
-    }, 1600);
-  };
+  setTimeout(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "auto",
+    });
+  }, 0);
+
+  setTimeout(() => {
+    setShowLogoutSuccess(false);
+  }, 1600);
+};
 
   const dashboardLabel =
     user?.role === "admin" ? "Admin Dashboard" : "My Dashboard";
