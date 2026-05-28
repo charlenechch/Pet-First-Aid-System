@@ -32,15 +32,21 @@ function ManageFeedback() {
   const token = localStorage.getItem("token");
 
   // ── Fetch ─────────────────────────────────────────────────
-  useEffect(() => {
-    async function fetchFeedback() {
-      try {
-        const res = await fetch(`${API_URL}/api/admin/feedback`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to load feedback.");
-        const data = await res.json();
-        setFeedbackList((data.feedback || []).map((f) => ({
+useEffect(() => {
+  async function fetchFeedback() {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${API_URL}/api/admin/feedback`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error("Failed to load feedback.");
+
+      const data = await res.json();
+
+      setFeedbackList(
+        (data.feedback || []).map((f) => ({
           id: f.feedbackID,
           userName: f.userName,
           userInitials: getInitials(f.userName),
@@ -49,15 +55,17 @@ function ManageFeedback() {
           message: f.message,
           submittedAt: f.submitted_at,
           status: f.status === "new" ? "New" : "Reviewed",
-        })));
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+        }))
+      );
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    fetchFeedback();
-  }, []);
+  }
+
+  fetchFeedback();
+}, []);
 
   // ── Stats ─────────────────────────────────────────────────
   const feedbackStats = useMemo(() => {

@@ -144,27 +144,32 @@ function ManageUsers() {
   const { toasts, dismiss, toast } = useToast();
   const { dialog, confirm, handleConfirm, handleCancel } = useConfirm();
 
-  // ── Fetch users ────────────────────────────────────────────
-  useEffect(() => {
-    async function fetchUsers() {
-      try {
-        const res = await fetch(`${API_URL}/api/admin/users`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.message || "Failed to load users.");
-        }
-        const data = await res.json();
-        setUsers(data.users);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+// ── Fetch users ────────────────────────────────────────────
+useEffect(() => {
+  async function fetchUsers() {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${API_URL}/api/admin/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to load users.");
       }
+
+      const data = await res.json();
+      setUsers(data.users);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    fetchUsers();
-  }, []);
+  }
+
+  fetchUsers();
+}, []);
 
   // ── Stats ──────────────────────────────────────────────────
   const userStats = useMemo(() => ({

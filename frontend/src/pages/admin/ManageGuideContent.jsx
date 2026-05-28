@@ -189,52 +189,102 @@ function ManageGuideContent() {
   const { dialog, confirm, handleConfirm, handleCancel } = useConfirm();
 
   // ── Fetch all data ─────────────────────────────────────────
-  useEffect(() => {
-    async function fetchAll() {
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
-        const urls = [
-          `${API_URL}/api/admin/emergency-cases`,
-          `${API_URL}/api/admin/pets`,
-          `${API_URL}/api/admin/guides`,
-          `${API_URL}/api/admin/media`,
-          `${API_URL}/api/admin/vet-advice`,
-        ];
-        const responses = await Promise.all(urls.map((url) => fetch(url, { headers })));
-        for (let i = 0; i < responses.length; i++) {
-          if (!responses[i].ok) {
-            throw new Error(`Route not found: ${urls[i]} (${responses[i].status})`);
-          }
+useEffect(() => {
+  async function fetchAll() {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const urls = [
+        `${API_URL}/api/admin/emergency-cases`,
+        `${API_URL}/api/admin/pets`,
+        `${API_URL}/api/admin/guides`,
+        `${API_URL}/api/admin/media`,
+        `${API_URL}/api/admin/vet-advice`,
+      ];
+
+      const responses = await Promise.all(
+        urls.map((url) => fetch(url, { headers }))
+      );
+
+      for (let i = 0; i < responses.length; i++) {
+        if (!responses[i].ok) {
+          throw new Error(`Route not found: ${urls[i]} (${responses[i].status})`);
         }
-        const [t, p, g, m, a] = await Promise.all(responses.map((r) => r.json()));
-        setEmergencyTopics((t.cases || []).map((c) => ({ id: c.emergencyID, title: c.topicTitle, petID: c.petID, severity: c.severity, status: c.status })));
-        setPets((p.pets || []).map((pt) => ({ id: pt.petID, name: pt.petName, emoji: pt.icon || "🐾", status: pt.status })));
-        setGuides((g.guides || []).map((gd) => ({
+      }
+
+      const [t, p, g, m, a] = await Promise.all(
+        responses.map((r) => r.json())
+      );
+
+      setEmergencyTopics(
+        (t.cases || []).map((c) => ({
+          id: c.emergencyID,
+          title: c.topicTitle,
+          petID: c.petID,
+          severity: c.severity,
+          status: c.status,
+        }))
+      );
+
+      setPets(
+        (p.pets || []).map((pt) => ({
+          id: pt.petID,
+          name: pt.petName,
+          emoji: pt.icon || "🐾",
+          status: pt.status,
+        }))
+      );
+
+      setGuides(
+        (g.guides || []).map((gd) => ({
           id: gd.guideID,
           topicId: gd.emergencyID,
           topicTitle: gd.topicTitle,
           title: gd.guideTitle,
           overview: gd.overview || "",
-          steps: (() => { try { return JSON.parse(gd.steps || "[]"); } catch { return []; } })(),
+          steps: (() => {
+            try {
+              return JSON.parse(gd.steps || "[]");
+            } catch {
+              return [];
+            }
+          })(),
           status: gd.status,
-        })));
-        setMediaList((m.media || []).map((md) => ({
-          id: md.mediaID, guideId: md.guideID, guideTitle: md.guideTitle,
+        }))
+      );
+
+      setMediaList(
+        (m.media || []).map((md) => ({
+          id: md.mediaID,
+          guideId: md.guideID,
+          guideTitle: md.guideTitle,
           type: md.media_type === "video" ? "Video" : "Image",
-          title: md.mediaTitle, url: md.mediaURL, caption: md.caption || "", status: md.mediaStatus,
-        })));
-        setVetAdviceList((a.advice || []).map((av) => ({
-          id: av.adviceID, guideId: av.guideID, guideTitle: av.guideTitle,
-          advice: av.advice_text, urgency: av.urgency, status: av.adviceStatus,
-        })));
-      } catch (err) {
-        setError("Failed to load data. " + err.message);
-      } finally {
-        setLoading(false);
-      }
+          title: md.mediaTitle,
+          url: md.mediaURL,
+          caption: md.caption || "",
+          status: md.mediaStatus,
+        }))
+      );
+
+      setVetAdviceList(
+        (a.advice || []).map((av) => ({
+          id: av.adviceID,
+          guideId: av.guideID,
+          guideTitle: av.guideTitle,
+          advice: av.advice_text,
+          urgency: av.urgency,
+          status: av.adviceStatus,
+        }))
+      );
+    } catch (err) {
+      setError("Failed to load data. " + err.message);
+    } finally {
+      setLoading(false);
     }
-    fetchAll();
-  }, []);
+  }
+
+  fetchAll();
+}, [token]);
 
   // ── Helpers ────────────────────────────────────────────────
   const filteredGuides = useMemo(() => {

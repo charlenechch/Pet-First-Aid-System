@@ -176,6 +176,7 @@ function ManageQuiz() {
   useEffect(() => {
     async function fetchAll() {
       try {
+       const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
         const [guidesRes, quizzesRes, questionsRes, resultsRes] = await Promise.all([
           fetch(`${API_URL}/api/admin/guides`, { headers }),

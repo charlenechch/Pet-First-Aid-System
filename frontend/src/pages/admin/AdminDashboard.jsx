@@ -6,9 +6,6 @@ import "../../styles/adminDashboard.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-// Presentational config for the stat cards. The icons + titles live
-// here on the frontend; only the live `value` comes from the backend,
-// matched in by `key` (users / guides / quizzes / feedback).
 const STAT_CARDS = [
   { key: "users", title: "Registered users", icon: "👥" },
   { key: "guides", title: "Published guides", icon: "📘" },
@@ -49,7 +46,6 @@ function AdminDashboard() {
   useEffect(() => {
     async function loadDashboard() {
       try {
-        // NOTE: match this key to whatever your teammate's login saves the JWT under
         const token = localStorage.getItem("token");
 
         const res = await fetch(`${API_URL}/api/admin/dashboard`, {

@@ -180,23 +180,35 @@ function ManagePetEmergency() {
   const token = localStorage.getItem("token");
 
   /* ── Fetch on mount ─────────────────────────────────────── */
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [petsRes, topicsRes] = await Promise.all([
-          fetch(`${API_URL}/api/admin/pets`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_URL}/api/admin/emergency-cases`, { headers: { Authorization: `Bearer ${token}` } }),
-        ]);
-        const petsData = await petsRes.json();
-        const topicsData = await topicsRes.json();
-        setPets((petsData.pets || []).map((p) => ({
+useEffect(() => {
+  async function fetchData() {
+    try {
+      const token = localStorage.getItem("token");
+
+      const [petsRes, topicsRes] = await Promise.all([
+        fetch(`${API_URL}/api/admin/pets`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/admin/emergency-cases`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const petsData = await petsRes.json();
+      const topicsData = await topicsRes.json();
+
+      setPets(
+        (petsData.pets || []).map((p) => ({
           id: p.petID,
           name: p.petName,
           emoji: p.icon || "🐾",
           description: p.petDesc || "",
           status: p.status,
-        })));
-        setTopics((topicsData.cases || []).map((t) => ({
+        }))
+      );
+
+      setTopics(
+        (topicsData.cases || []).map((t) => ({
           id: t.emergencyID,
           petIds: t.petID ? [t.petID] : [],
           title: t.topicTitle,
@@ -204,15 +216,17 @@ function ManagePetEmergency() {
           severity: t.severity,
           keywords: t.keywords || "",
           status: t.status,
-        })));
-      } catch (err) {
-        setError("Failed to load data. " + err.message);
-      } finally {
-        setLoading(false);
-      }
+        }))
+      );
+    } catch (err) {
+      setError("Failed to load data. " + err.message);
+    } finally {
+      setLoading(false);
     }
-    fetchData();
-  }, []);
+  }
+
+  fetchData();
+}, []);
 
   const availablePetsForNewTopic = pets.filter((pet) => pet.status === "Active");
   const selectablePetsForTopic = pets.filter(
