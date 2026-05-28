@@ -297,9 +297,10 @@ function Profile() {
 
       setProfile((prev) => mapUserToProfile(data.user, prev.pets, prev.avatarUrl));
       localStorage.setItem("user", JSON.stringify(data.user));
+window.dispatchEvent(new Event("userUpdated"));
 
-      setIsEditModalOpen(false);
-      showSuccess("Profile updated successfully.");
+setIsEditModalOpen(false);
+showSuccess("Profile updated successfully.");
     } catch (error) {
       console.error("Update profile error:", error);
       setError("Cannot connect to server. Please make sure backend is running.");
@@ -623,10 +624,11 @@ function Profile() {
       ...mapUserToProfile(data.user, prev.pets),
     }));
 
-    localStorage.setItem("user", JSON.stringify(data.user));
+  localStorage.setItem("user", JSON.stringify(data.user));
+window.dispatchEvent(new Event("userUpdated"));
 
-    setIsAvatarModalOpen(false);
-    showSuccess("Avatar updated successfully.");
+setIsAvatarModalOpen(false);
+showSuccess("Avatar updated successfully.");
   } catch (error) {
     console.error("Save avatar error:", error);
     alert("Cannot connect to server. Please make sure backend is running.");
@@ -672,10 +674,11 @@ function Profile() {
     }));
 
     localStorage.setItem("user", JSON.stringify(data.user));
+window.dispatchEvent(new Event("userUpdated"));
 
-    setAvatarPreview("");
-    setIsAvatarModalOpen(false);
-    showSuccess("Avatar removed.");
+setAvatarPreview("");
+setIsAvatarModalOpen(false);
+showSuccess("Avatar removed.");
   } catch (error) {
     console.error("Remove avatar error:", error);
     alert("Cannot connect to server. Please make sure backend is running.");

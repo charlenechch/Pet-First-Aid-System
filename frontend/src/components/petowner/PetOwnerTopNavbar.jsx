@@ -1,13 +1,46 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../../styles/admin.css";
 import "../../styles/petOwner.css";
+
+function getInitials(name = "") {
+  return name
+    .split(" ")
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function getStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "null");
+  } catch (error) {
+    console.error("Invalid user data in localStorage:", error);
+    return null;
+  }
+}
 
 function PetOwnerTopNavbar({ onMenuClick }) {
   const navigate = useNavigate();
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
+  const [currentUser, setCurrentUser] = useState(getStoredUser);
+
+  useEffect(() => {
+    function syncUser() {
+      setCurrentUser(getStoredUser());
+    }
+
+    window.addEventListener("userUpdated", syncUser);
+    window.addEventListener("storage", syncUser);
+
+    return () => {
+      window.removeEventListener("userUpdated", syncUser);
+      window.removeEventListener("storage", syncUser);
+    };
+  }, []);
 
   function openLogoutModal() {
     setShowLogoutModal(true);
@@ -20,6 +53,7 @@ function PetOwnerTopNavbar({ onMenuClick }) {
   function handleLogoutConfirm() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    window.dispatchEvent(new Event("userUpdated"));
 
     setShowLogoutModal(false);
     setShowLogoutSuccess(true);
@@ -69,7 +103,16 @@ function PetOwnerTopNavbar({ onMenuClick }) {
             className="admin-avatar-link"
             title="My Profile"
           >
-            <div className="top-admin-avatar">J</div>
+            <div className="top-admin-avatar">
+              {currentUser?.avatarUrl ? (
+                <img
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.name || "Pet owner avatar"}
+                />
+              ) : (
+                getInitials(currentUser?.name || "User")
+              )}
+            </div>
           </Link>
 
           <button className="logout-btn" onClick={openLogoutModal}>

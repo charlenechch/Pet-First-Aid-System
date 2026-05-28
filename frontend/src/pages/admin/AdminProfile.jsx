@@ -76,9 +76,22 @@ function AdminProfile() {
       if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to update profile."); return; }
       setAdminProfile((prev) => ({ ...prev, ...profileForm }));
       // Update localStorage user too
-      const stored = JSON.parse(localStorage.getItem("user") || "{}");
-      localStorage.setItem("user", JSON.stringify({ ...stored, name: profileForm.name, email: profileForm.email }));
-      setIsEditModalOpen(false);
+     const stored = JSON.parse(localStorage.getItem("user") || "{}");
+
+localStorage.setItem(
+  "user",
+  JSON.stringify({
+    ...stored,
+    name: profileForm.name,
+    email: profileForm.email,
+    phone_no: profileForm.phone_no,
+    bio: profileForm.bio,
+  })
+);
+
+window.dispatchEvent(new Event("userUpdated"));
+
+setIsEditModalOpen(false);
     } catch { alert("Server error."); }
   }
 
@@ -123,6 +136,7 @@ async function saveAvatar() {
 
     const stored = JSON.parse(localStorage.getItem("user") || "{}");
     localStorage.setItem("user", JSON.stringify({ ...stored, avatarUrl: data.user.avatarUrl }));
+    window.dispatchEvent(new Event("userUpdated"));
 
     setIsAvatarModalOpen(false);
   } catch (error) {
@@ -158,6 +172,7 @@ async function removeAvatar() {
 
     const stored = JSON.parse(localStorage.getItem("user") || "{}");
     localStorage.setItem("user", JSON.stringify({ ...stored, avatarUrl: "" }));
+    window.dispatchEvent(new Event("userUpdated"));
 
     setIsAvatarModalOpen(false);
   } catch (error) {
