@@ -560,7 +560,19 @@ function ManageGuideContent() {
                 Upload Image
                 <input type="file" accept="image/*" onChange={handleImageUpload} style={{ padding: "8px 0" }} />
                 {mediaForm.url && mediaForm.url.startsWith("data:") && (
-                  <img src={mediaForm.url} alt="preview" style={{ marginTop: 10, maxHeight: 160, borderRadius: 8, objectFit: "cover", width: "100%" }} />
+                  <img
+                    src={mediaForm.url}
+                    alt="preview"
+                    style={{
+                      marginTop: 10,
+                      width: "100%",
+                      maxHeight: 260,
+                      objectFit: "contain",
+                      borderRadius: 8,
+                      background: "#f6f6f6",
+                      display: "block"
+                    }}
+                  />
                 )}
                 {mediaForm.url && !mediaForm.url.startsWith("data:") && (
                   <p className="form-note" style={{ marginTop: 6 }}>Current: <a href={mediaForm.url} target="_blank" rel="noreferrer">View image</a></p>
