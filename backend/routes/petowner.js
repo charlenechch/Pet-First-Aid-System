@@ -51,18 +51,19 @@ router.get("/profile/me", verifyToken, async (req, res) => {
 
     const [users] = await pool.query(
       `
-      SELECT 
-        userID,
-        name,
-        email,
-        phone_no,
-        role,
-        status,
-        bio,
-        created_at,
-        last_login
-      FROM users
-      WHERE userID = ?
+  SELECT 
+  userID,
+  name,
+  email,
+  phone_no,
+  role,
+  status,
+  bio,
+  avatar_url AS avatarUrl,
+  created_at,
+  last_login
+FROM users
+WHERE userID = ?
       `,
       [userID]
     );
@@ -150,18 +151,19 @@ router.put("/profile/me", verifyToken, async (req, res) => {
 
     const [updatedUsers] = await pool.query(
       `
-      SELECT 
-        userID,
-        name,
-        email,
-        phone_no,
-        role,
-        status,
-        bio,
-        last_login,
-        created_at
-      FROM users
-      WHERE userID = ?
+     SELECT 
+  userID,
+  name,
+  email,
+  phone_no,
+  role,
+  status,
+  bio,
+  avatar_url AS avatarUrl,
+  last_login,
+  created_at
+FROM users
+WHERE userID = ?
       `,
       [userID]
     );
@@ -175,6 +177,63 @@ router.put("/profile/me", verifyToken, async (req, res) => {
 
     res.status(500).json({
       message: "Server error while updating profile.",
+      error: error.message,
+    });
+  }
+});
+
+// ==========================
+// UPDATE CURRENT USER AVATAR
+// Final URL: PUT /api/profile/avatar
+// ==========================
+router.put("/profile/avatar", verifyToken, async (req, res) => {
+  try {
+    const userID = req.user.userID || req.user.userid || req.user.id;
+    const { avatarUrl } = req.body;
+
+    if (!userID) {
+      return res.status(401).json({
+        message: "Invalid token. Please login again.",
+      });
+    }
+
+    await pool.query(
+      `
+      UPDATE users
+      SET avatar_url = ?
+      WHERE userID = ?
+      `,
+      [avatarUrl || null, userID]
+    );
+
+    const [updatedUsers] = await pool.query(
+      `
+      SELECT 
+        userID,
+        name,
+        email,
+        phone_no,
+        role,
+        status,
+        bio,
+        avatar_url AS avatarUrl,
+        last_login,
+        created_at
+      FROM users
+      WHERE userID = ?
+      `,
+      [userID]
+    );
+
+    res.json({
+      message: avatarUrl ? "Avatar updated successfully." : "Avatar removed successfully.",
+      user: updatedUsers[0],
+    });
+  } catch (error) {
+    console.error("Update avatar error:", error);
+
+    res.status(500).json({
+      message: "Server error while updating avatar.",
       error: error.message,
     });
   }

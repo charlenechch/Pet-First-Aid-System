@@ -53,9 +53,9 @@ app.post("/api/auth/register", async (req, res) => {
     );
 
     const [newUsers] = await pool.query(
-      `SELECT userID, name, email, phone_no, role, status, bio, last_login, created_at
-       FROM users
-       WHERE userID = ?`,
+      `SELECT userID, name, email, phone_no, role, status, bio, avatar_url AS avatarUrl, last_login, created_at
+FROM users
+WHERE userID = ?`,
       [result.insertId]
     );
 
@@ -120,7 +120,7 @@ app.post("/api/auth/login", async (req, res) => {
     console.log("LOGIN TIME CHECK:", checkTime[0]);
 
     const [updatedUsers] = await pool.query(
-      "SELECT userID, name, email, phone_no, role, status, bio, last_login, created_at FROM users WHERE userID = ?",
+      "SELECT userID, name, email, phone_no, role, status, bio, avatar_url AS avatarUrl, last_login, created_at FROM users WHERE userID = ?",
       [user.userID]
     );
 
@@ -142,15 +142,16 @@ app.post("/api/auth/login", async (req, res) => {
       message: "Login successful.",
       token,
       user: {
-        userID: updatedUser.userID,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        phone_no: updatedUser.phone_no,
-        role: updatedUser.role,
-        status: updatedUser.status,
-        bio: updatedUser.bio,
-        last_login: updatedUser.last_login,
-      },
+  userID: updatedUser.userID,
+  name: updatedUser.name,
+  email: updatedUser.email,
+  phone_no: updatedUser.phone_no,
+  role: updatedUser.role,
+  status: updatedUser.status,
+  bio: updatedUser.bio,
+  avatarUrl: updatedUser.avatarUrl,
+  last_login: updatedUser.last_login,
+},
     });
   } catch (error) {
     console.error("Login error:", error);

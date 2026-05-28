@@ -127,7 +127,7 @@ function Profile() {
     }));
   }
 
-  function mapUserToProfile(user, pets = [], avatarUrl = "") {
+  function mapUserToProfile(user, pets = [], avatarUrl = user.avatarUrl || "") {
     return {
       userID: user.userID || "",
       name: user.name || "",
@@ -201,7 +201,7 @@ function Profile() {
 
         const mappedPets = mapPetsFromBackend(data.pets || []);
 
-        setProfile(() => mapUserToProfile(data.user, mappedPets, ""));
+      setProfile(() => mapUserToProfile(data.user, mappedPets));
         localStorage.setItem("user", JSON.stringify(data.user));
       } catch (error) {
         console.error("Load profile error:", error);
@@ -587,19 +587,100 @@ function Profile() {
     reader.readAsDataURL(file);
   }
 
-  function saveAvatar() {
-    setProfile((prev) => ({ ...prev, avatarUrl: avatarPreview }));
+ async function saveAvatar() {
+  try {
+    const token = getToken();
+
+    if (!token) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/profile/avatar`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        avatarUrl: avatarPreview,
+      }),
+    });
+
+    const data = await readJson(response);
+
+    if (response.status === 401) {
+      handleUnauthorized();
+      return;
+    }
+
+    if (!response.ok) {
+      alert(data.message || "Failed to update avatar.");
+      return;
+    }
+
+    setProfile((prev) => ({
+      ...mapUserToProfile(data.user, prev.pets),
+    }));
+
+    localStorage.setItem("user", JSON.stringify(data.user));
+
     setIsAvatarModalOpen(false);
     showSuccess("Avatar updated successfully.");
+  } catch (error) {
+    console.error("Save avatar error:", error);
+    alert("Cannot connect to server. Please make sure backend is running.");
   }
+}
 
-  function removeAvatar() {
-    if (!window.confirm("Remove current avatar?")) return;
-    setProfile((prev) => ({ ...prev, avatarUrl: "" }));
+ async function removeAvatar() {
+  if (!window.confirm("Remove current avatar?")) return;
+
+  try {
+    const token = getToken();
+
+    if (!token) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/profile/avatar`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        avatarUrl: "",
+      }),
+    });
+
+    const data = await readJson(response);
+
+    if (response.status === 401) {
+      handleUnauthorized();
+      return;
+    }
+
+    if (!response.ok) {
+      alert(data.message || "Failed to remove avatar.");
+      return;
+    }
+
+    setProfile((prev) => ({
+      ...mapUserToProfile(data.user, prev.pets),
+    }));
+
+    localStorage.setItem("user", JSON.stringify(data.user));
+
     setAvatarPreview("");
     setIsAvatarModalOpen(false);
     showSuccess("Avatar removed.");
+  } catch (error) {
+    console.error("Remove avatar error:", error);
+    alert("Cannot connect to server. Please make sure backend is running.");
   }
+}
 
   // ── Modals ────────────────────────────────────────────────
 

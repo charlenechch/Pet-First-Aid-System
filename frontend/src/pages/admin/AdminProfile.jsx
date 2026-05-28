@@ -99,19 +99,72 @@ function AdminProfile() {
     reader.readAsDataURL(file);
   }
 
-  async function saveAvatar() {
-    // Store avatar in bio field workaround — or just local state for now
-    // since backend doesn't have an avatar column
-    setAdminProfile((prev) => ({ ...prev, avatarUrl: avatarPreview }));
-    setIsAvatarModalOpen(false);
-  }
+async function saveAvatar() {
+  try {
+    const res = await fetch(`${API_URL}/api/profile/avatar`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        avatarUrl: avatarPreview,
+      }),
+    });
 
-  function removeAvatar() {
-    if (!window.confirm("Remove current avatar?")) return;
-    setAdminProfile((prev) => ({ ...prev, avatarUrl: "" }));
-    setAvatarPreview("");
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || "Failed to update avatar.");
+      return;
+    }
+
+    setAdminProfile(data.user);
+
+    const stored = JSON.parse(localStorage.getItem("user") || "{}");
+    localStorage.setItem("user", JSON.stringify({ ...stored, avatarUrl: data.user.avatarUrl }));
+
     setIsAvatarModalOpen(false);
+  } catch (error) {
+    console.error("Save avatar error:", error);
+    alert("Server error.");
   }
+}
+
+async function removeAvatar() {
+  if (!window.confirm("Remove current avatar?")) return;
+
+  try {
+    const res = await fetch(`${API_URL}/api/profile/avatar`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        avatarUrl: "",
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || "Failed to remove avatar.");
+      return;
+    }
+
+    setAdminProfile(data.user);
+    setAvatarPreview("");
+
+    const stored = JSON.parse(localStorage.getItem("user") || "{}");
+    localStorage.setItem("user", JSON.stringify({ ...stored, avatarUrl: "" }));
+
+    setIsAvatarModalOpen(false);
+  } catch (error) {
+    console.error("Remove avatar error:", error);
+    alert("Server error.");
+  }
+}
 
   // ── Password ──────────────────────────────────────────────
   function openPasswordModal() {
