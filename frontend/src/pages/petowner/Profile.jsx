@@ -28,6 +28,7 @@ function Profile() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isPetModalOpen, setIsPetModalOpen] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   const [profile, setProfile] = useState(emptyProfile);
 
@@ -50,6 +51,9 @@ function Profile() {
     name: "",
     breed: "",
   });
+
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const [avatarFileName, setAvatarFileName] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -123,7 +127,7 @@ function Profile() {
     }));
   }
 
-  function mapUserToProfile(user, pets = []) {
+  function mapUserToProfile(user, pets = [], avatarUrl = "") {
     return {
       userID: user.userID || "",
       name: user.name || "",
@@ -135,7 +139,7 @@ function Profile() {
       joined: formatDate(user.created_at),
       lastLogin: formatDate(user.last_login),
       initials: getInitials(user.name),
-      avatarUrl: "",
+      avatarUrl: avatarUrl,
       pets,
     };
   }
@@ -197,7 +201,7 @@ function Profile() {
 
         const mappedPets = mapPetsFromBackend(data.pets || []);
 
-        setProfile(() => mapUserToProfile(data.user, mappedPets));
+        setProfile(() => mapUserToProfile(data.user, mappedPets, ""));
         localStorage.setItem("user", JSON.stringify(data.user));
       } catch (error) {
         console.error("Load profile error:", error);
@@ -291,7 +295,7 @@ function Profile() {
         return;
       }
 
-      setProfile((prev) => mapUserToProfile(data.user, prev.pets));
+      setProfile((prev) => mapUserToProfile(data.user, prev.pets, prev.avatarUrl));
       localStorage.setItem("user", JSON.stringify(data.user));
 
       setIsEditModalOpen(false);
@@ -551,6 +555,126 @@ function Profile() {
       console.error("Remove pet error:", error);
       alert("Cannot connect to server. Please make sure backend is running.");
     }
+  }
+
+  // ── Avatar ────────────────────────────────────────────────
+  function openAvatarModal() {
+    setAvatarPreview(profile.avatarUrl || "");
+    setAvatarFileName("");
+    setIsAvatarModalOpen(true);
+  }
+
+  function closeAvatarModal() {
+    setIsAvatarModalOpen(false);
+  }
+
+  function handleAvatarChange(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image size should be less than 2MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result);
+      setAvatarFileName(file.name);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function saveAvatar() {
+    setProfile((prev) => ({ ...prev, avatarUrl: avatarPreview }));
+    setIsAvatarModalOpen(false);
+    showSuccess("Avatar updated successfully.");
+  }
+
+  function removeAvatar() {
+    if (!window.confirm("Remove current avatar?")) return;
+    setProfile((prev) => ({ ...prev, avatarUrl: "" }));
+    setAvatarPreview("");
+    setIsAvatarModalOpen(false);
+    showSuccess("Avatar removed.");
+  }
+
+  // ── Modals ────────────────────────────────────────────────
+
+  function renderAvatarModal() {
+    if (!isAvatarModalOpen) return null;
+
+    return (
+      <div className="modal-backdrop" onClick={closeAvatarModal}>
+        <section
+          className="admin-modal profile-modal"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="modal-header">
+            <div>
+              <p className="page-subtitle">My Account</p>
+              <h2>Edit Avatar</h2>
+            </div>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={closeAvatarModal}
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="avatar-edit-content">
+            <div className="avatar-preview">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Avatar preview" />
+              ) : (
+                <span>{profile.initials}</span>
+              )}
+            </div>
+            <div className="avatar-upload-box">
+              <label className="avatar-upload-label">
+                Choose Image
+                <input type="file" accept="image/*" onChange={handleAvatarChange} />
+              </label>
+              <p>Upload a square image for best result. Maximum file size: 2MB.</p>
+              {avatarFileName && (
+                <small className="avatar-file-name">Selected: {avatarFileName}</small>
+              )}
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={saveAvatar}
+              disabled={!avatarPreview}
+            >
+              Save Avatar
+            </button>
+            {profile.avatarUrl && (
+              <button
+                type="button"
+                className="secondary-btn danger-outline"
+                onClick={removeAvatar}
+              >
+                Remove Avatar
+              </button>
+            )}
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={closeAvatarModal}
+            >
+              Cancel
+            </button>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   function renderEditModal() {
@@ -900,6 +1024,7 @@ function Profile() {
         </div>
       )}
 
+      {renderAvatarModal()}
       {renderEditModal()}
       {renderPasswordModal()}
       {renderPetModal()}
@@ -932,6 +1057,13 @@ function Profile() {
                   profile.initials
                 )}
               </div>
+              <button
+                type="button"
+                className="profile-avatar-edit-btn"
+                onClick={openAvatarModal}
+              >
+                ✎
+              </button>
             </div>
 
             <div className="profile-name-area">

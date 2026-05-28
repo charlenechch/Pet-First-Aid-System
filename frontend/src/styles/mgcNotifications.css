@@ -1,0 +1,378 @@
+
+/* ═══════════════════════════════════════════════
+   TOAST CONTAINER
+═══════════════════════════════════════════════ */
+
+.mgcn-toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════
+   SINGLE TOAST
+═══════════════════════════════════════════════ */
+
+.mgcn-toast {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid var(--admin-border, #e5e2dc);
+  border-radius: 16px;
+  padding: 14px 16px 18px;
+  box-shadow:
+    0 8px 24px rgba(20, 29, 24, 0.12),
+    0 2px 8px rgba(20, 29, 24, 0.06);
+  pointer-events: all;
+  overflow: hidden;
+
+  /* Enter animation */
+  animation: mgcnToastIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mgcn-toast--leaving {
+  animation: mgcnToastOut 0.32s ease forwards;
+}
+
+/* Coloured left stripe */
+.mgcn-toast::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 16px 0 0 16px;
+}
+
+.mgcn-toast--success::before { background: #2f5f46; }
+.mgcn-toast--error::before   { background: #b6533f; }
+.mgcn-toast--warning::before { background: #c48b0f; }
+.mgcn-toast--info::before    { background: #1a6fa8; }
+
+/* ── Icon ── */
+.mgcn-toast__icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.mgcn-toast--success .mgcn-toast__icon {
+  background: #dff1df;
+  color: #2f5f46;
+}
+.mgcn-toast--error .mgcn-toast__icon {
+  background: #fff1ee;
+  color: #b6533f;
+}
+.mgcn-toast--warning .mgcn-toast__icon {
+  background: #fff7df;
+  color: #c48b0f;
+}
+.mgcn-toast--info .mgcn-toast__icon {
+  background: #e8f4fd;
+  color: #1a6fa8;
+}
+
+/* ── Body ── */
+.mgcn-toast__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mgcn-toast__title {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--admin-text, #203329);
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+
+.mgcn-toast__msg {
+  margin: 0;
+  font-size: 13px;
+  color: var(--admin-muted, #6f7c73);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* ── Close button ── */
+.mgcn-toast__close {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: #f2f0eb;
+  color: var(--admin-muted, #6f7c73);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-top: 1px;
+  transition: background 0.15s;
+}
+
+.mgcn-toast__close:hover {
+  background: #e2ded6;
+  color: var(--admin-text, #203329);
+}
+
+/* ── Progress bar ── */
+.mgcn-toast__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 0 0 16px 16px;
+  width: 100%;
+  transform-origin: left;
+  animation: mgcnProgress 4s linear forwards;
+}
+
+.mgcn-toast--success .mgcn-toast__progress { background: #2f5f46; }
+.mgcn-toast--error   .mgcn-toast__progress { background: #b6533f; }
+.mgcn-toast--warning .mgcn-toast__progress { background: #c48b0f; }
+.mgcn-toast--info    .mgcn-toast__progress { background: #1a6fa8; }
+
+/* ═══════════════════════════════════════════════
+   TOAST KEYFRAMES
+═══════════════════════════════════════════════ */
+
+@keyframes mgcnToastIn {
+  from {
+    opacity: 0;
+    transform: translateX(32px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes mgcnToastOut {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    max-height: 120px;
+    margin-bottom: 0;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(32px) scale(0.92);
+    max-height: 0;
+    margin-bottom: -12px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+@keyframes mgcnProgress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* ═══════════════════════════════════════════════
+   CONFIRM DIALOG OVERLAY
+═══════════════════════════════════════════════ */
+
+.mgcn-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  background: rgba(20, 29, 24, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: mgcnOverlayIn 0.18s ease both;
+}
+
+/* ═══════════════════════════════════════════════
+   CONFIRM DIALOG CARD
+═══════════════════════════════════════════════ */
+
+.mgcn-confirm-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 26px;
+  padding: 36px 32px 32px;
+  text-align: center;
+  border: 1px solid var(--admin-border, #e5e2dc);
+  box-shadow:
+    0 32px 80px rgba(20, 29, 24, 0.22),
+    0 8px 24px rgba(20, 29, 24, 0.1);
+  animation: mgcnModalIn 0.26s cubic-bezier(0.34, 1.48, 0.64, 1) both;
+}
+
+/* ── Icon ── */
+.mgcn-confirm-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  display: grid;
+  place-items: center;
+  font-size: 32px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.1);
+}
+
+/* ── Title ── */
+.mgcn-confirm-title {
+  font-family: "Playfair Display", serif;
+  font-size: 26px !important;
+  font-weight: 700;
+  color: var(--admin-text, #203329) !important;
+  margin: 0 0 12px !important;
+  line-height: 1.25;
+}
+
+/* ── Message ── */
+.mgcn-confirm-msg {
+  font-size: 14px;
+  color: var(--admin-muted, #6f7c73);
+  line-height: 1.7;
+  margin: 0 0 28px;
+  padding: 0;
+}
+
+/* ── Actions ── */
+.mgcn-confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.mgcn-confirm-cancel,
+.mgcn-confirm-ok {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 13px 18px;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  line-height: 1;
+}
+
+/* Cancel button */
+.mgcn-confirm-cancel {
+  background: #f5f9f6;
+  color: var(--admin-green-dark, #1f3f31);
+  border: 1.5px solid var(--admin-border, #e5e2dc);
+}
+
+.mgcn-confirm-cancel:hover {
+  background: var(--admin-green-light, #dff1df);
+  border-color: var(--admin-green, #2f5f46);
+  transform: translateY(-1px);
+}
+
+/* Confirm — danger variant (red) */
+.mgcn-confirm-ok--danger {
+  background: linear-gradient(135deg, #c05640, #9e3d28);
+  color: #ffffff;
+  box-shadow: 0 8px 22px rgba(176, 70, 48, 0.28);
+}
+
+.mgcn-confirm-ok--danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(176, 70, 48, 0.36);
+}
+
+/* Confirm — warning variant (amber) */
+.mgcn-confirm-ok--warning {
+  background: linear-gradient(135deg, #c48b0f, #a57208);
+  color: #ffffff;
+  box-shadow: 0 8px 22px rgba(196, 139, 15, 0.28);
+}
+
+.mgcn-confirm-ok--warning:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(196, 139, 15, 0.36);
+}
+
+/* Confirm — info variant (green, same as admin brand) */
+.mgcn-confirm-ok--info {
+  background: linear-gradient(135deg, #2f5f46, #1f3f31);
+  color: #ffffff;
+  box-shadow: 0 8px 22px rgba(47, 95, 70, 0.28);
+}
+
+.mgcn-confirm-ok--info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(47, 95, 70, 0.36);
+}
+
+/* Active press */
+.mgcn-confirm-cancel:active,
+.mgcn-confirm-ok:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ═══════════════════════════════════════════════
+   CONFIRM KEYFRAMES
+═══════════════════════════════════════════════ */
+
+@keyframes mgcnOverlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes mgcnModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  .mgcn-toast-container {
+    top: 16px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+
+  .mgcn-confirm-modal {
+    padding: 28px 22px 26px;
+  }
+
+  .mgcn-confirm-actions {
+    flex-direction: column;
+  }
+
+  .mgcn-confirm-title {
+    font-size: 22px !important;
+  }
+}

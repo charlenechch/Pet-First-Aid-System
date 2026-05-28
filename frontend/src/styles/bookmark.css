@@ -1,0 +1,422 @@
+/* ── Toast notification ─────────────────────────────────────── */
+
+.bm-toast-portal {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.bm-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 260px;
+  max-width: 380px;
+  pointer-events: auto;
+  animation: bm-toast-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.bm-toast.bm-toast-exit {
+  animation: bm-toast-out 0.3s ease forwards;
+}
+
+.bm-toast-success {
+  background: #edf8ee;
+  border: 1px solid #b2ddb8;
+  color: #1f5c2b;
+}
+
+.bm-toast-error {
+  background: #fff1ee;
+  border: 1px solid #f5c5b8;
+  color: #923829;
+}
+
+.bm-toast-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+@keyframes bm-toast-in {
+  from { opacity: 0; transform: translateX(40px) scale(0.9); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);   }
+}
+
+@keyframes bm-toast-out {
+  from { opacity: 1; transform: translateX(0)    scale(1);   }
+  to   { opacity: 0; transform: translateX(40px) scale(0.9); }
+}
+
+/* ── Shared modal backdrop ───────────────────────────────────── */
+
+.bm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 30, 22, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: bm-fade-in 0.2s ease both;
+}
+
+@keyframes bm-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes bm-modal-up {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* ── Confirm-remove modal ────────────────────────────────────── */
+
+.bm-confirm-modal {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 36px 32px 28px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 24px 64px rgba(20, 30, 22, 0.18);
+  animation: bm-modal-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  text-align: center;
+}
+
+.bm-confirm-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #fff1ee;
+  color: #c0583e;
+  font-size: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  border: 3px solid #fce2da;
+}
+
+.bm-confirm-modal h2 {
+  margin: 0 0 10px;
+  font-family: "Playfair Display", serif;
+  font-size: 22px;
+  color: var(--admin-text);
+}
+
+.bm-confirm-modal p {
+  margin: 0 0 28px;
+  color: var(--admin-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.bm-confirm-modal p strong {
+  color: var(--admin-text);
+}
+
+.bm-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* ── Shared button styles (all bm- scoped) ───────────────────── */
+
+.bm-btn-cancel {
+  border: 1.5px solid var(--admin-border);
+  background: #ffffff;
+  color: var(--admin-text);
+  border-radius: 999px;
+  padding: 11px 24px;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.bm-btn-cancel:hover {
+  background: #f5f3ef;
+  border-color: #ccc9c2;
+}
+
+.bm-btn-danger {
+  border: none;
+  background: #c0583e;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 11px 24px;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: 0.18s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bm-btn-danger:hover {
+  background: #a3432d;
+  transform: translateY(-1px);
+}
+
+.bm-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.bm-btn-primary-full {
+  flex: 1;
+  border: none;
+  background: var(--admin-green);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 13px 20px;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: 0.18s ease;
+}
+
+.bm-btn-primary-full:hover {
+  background: var(--admin-green-dark);
+  transform: translateY(-1px);
+}
+
+.bm-btn-danger-outline {
+  border: 1.5px solid #f5c5b8;
+  background: #ffffff;
+  color: #c0583e;
+  border-radius: 999px;
+  padding: 13px 20px;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.18s ease;
+}
+
+.bm-btn-danger-outline:hover {
+  background: #fff1ee;
+  border-color: #e0978a;
+}
+
+/* ── Guide-preview modal ─────────────────────────────────────── */
+
+.bm-guide-modal {
+  background: #ffffff;
+  border-radius: 28px;
+  max-width: 620px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 28px 72px rgba(20, 30, 22, 0.2);
+  animation: bm-modal-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  display: flex;
+  flex-direction: column;
+}
+
+.bm-guide-modal::-webkit-scrollbar       { width: 6px; }
+.bm-guide-modal::-webkit-scrollbar-track { background: transparent; }
+.bm-guide-modal::-webkit-scrollbar-thumb { background: #d8d4cc; border-radius: 999px; }
+
+.bm-guide-modal-hero {
+  background: linear-gradient(135deg, #fbe6d8 0%, #fff6ec 100%);
+  border-radius: 28px 28px 0 0;
+  padding: 28px 28px 22px;
+  border-bottom: 1px solid #f1d6c0;
+  position: relative;
+}
+
+.bm-guide-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--admin-muted);
+  font-size: 18px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: 0.18s ease;
+}
+
+.bm-guide-modal-close:hover {
+  background: #ffffff;
+  color: var(--admin-text);
+  transform: scale(1.08);
+}
+
+.bm-guide-modal-pet-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.bm-guide-modal-pet-pill {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid #f1d6c0;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b3a1f;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.bm-guide-modal-hero h2 {
+  margin: 0 0 8px;
+  font-family: "Playfair Display", serif;
+  font-size: 24px;
+  color: #4a2510;
+  line-height: 1.3;
+  padding-right: 40px;
+}
+
+.bm-guide-modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bm-guide-modal-saved {
+  font-size: 12px;
+  color: #a0714a;
+  font-weight: 500;
+}
+
+.bm-guide-modal-body {
+  padding: 24px 28px 28px;
+  flex: 1;
+}
+
+.bm-guide-modal-summary-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--admin-muted);
+  margin: 0 0 8px;
+}
+
+.bm-guide-modal-summary {
+  color: var(--admin-text);
+  font-size: 14px;
+  line-height: 1.75;
+  margin: 0 0 28px;
+  background: #fafaf7;
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.bm-guide-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* ── Card remove button — scoped to bookmark page only ───────── */
+/*
+   We scope this under .bm-page so it ONLY applies inside the
+   bookmark page wrapper and never leaks to other pages that
+   might reuse .bookmark-remove-btn from petOwner.css.
+*/
+
+.bm-page .bookmark-remove-btn {
+  border: 1.5px solid transparent;
+  transition: 0.18s ease;
+}
+
+.bm-page .bookmark-remove-btn:hover {
+  background: #fff1ee;
+  border-color: #fad5cc;
+}
+
+/* ── Spinner ─────────────────────────────────────────────────── */
+
+@keyframes bm-spin {
+  to { transform: rotate(360deg); }
+}
+
+.bm-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2.5px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: bm-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────── */
+
+@media (max-width: 540px) {
+  .bm-toast-portal {
+    top: auto;
+    bottom: 80px;
+    right: 12px;
+    left: 12px;
+  }
+
+  .bm-toast {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+  }
+
+  .bm-confirm-modal {
+    padding: 28px 20px 22px;
+  }
+
+  .bm-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .bm-guide-modal {
+    border-radius: 22px 22px 0 0;
+    max-height: 90vh;
+  }
+
+  .bm-guide-modal-hero {
+    border-radius: 22px 22px 0 0;
+  }
+
+  .bm-guide-modal-actions {
+    flex-direction: column;
+  }
+}

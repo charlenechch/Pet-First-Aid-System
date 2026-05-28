@@ -1,14 +1,169 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import "../../styles/admin.css";
 import "../../styles/manageGuideContent.css";
+import "../../styles/mgcNotifications.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// ─────────────────────────────────────────────────────────────
+// Toast hook
+// ─────────────────────────────────────────────────────────────
+function useToast() {
+  const [toasts, setToasts] = useState([]);
+  const timers = useRef({});
+
+  const dismiss = useCallback((id) => {
+    setToasts((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, leaving: true } : t))
+    );
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 350);
+  }, []);
+
+  const show = useCallback(
+    (type, title, message) => {
+      const id = Date.now() + Math.random();
+      setToasts((prev) => [...prev, { id, type, title, message, leaving: false }]);
+      timers.current[id] = setTimeout(() => dismiss(id), 4000);
+      return id;
+    },
+    [dismiss]
+  );
+
+  const toast = useMemo(
+    () => ({
+      success: (title, msg) => show("success", title, msg),
+      error: (title, msg) => show("error", title, msg),
+      warning: (title, msg) => show("warning", title, msg),
+      info: (title, msg) => show("info", title, msg),
+    }),
+    [show]
+  );
+
+  return { toasts, dismiss, toast };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Confirm dialog hook
+// ─────────────────────────────────────────────────────────────
+function useConfirm() {
+  const [dialog, setDialog] = useState(null);
+  const resolverRef = useRef(null);
+
+  const confirm = useCallback(({ title, message, confirmLabel = "Confirm", cancelLabel = "Cancel", variant = "danger" }) => {
+    return new Promise((resolve) => {
+      resolverRef.current = resolve;
+      setDialog({ title, message, confirmLabel, cancelLabel, variant });
+    });
+  }, []);
+
+  function handleConfirm() {
+    setDialog(null);
+    resolverRef.current?.(true);
+  }
+  function handleCancel() {
+    setDialog(null);
+    resolverRef.current?.(false);
+  }
+
+  return { dialog, confirm, handleConfirm, handleCancel };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Toast renderer component
+// ─────────────────────────────────────────────────────────────
+const TOAST_ICONS = {
+  success: "✓",
+  error: "✕",
+  warning: "⚠",
+  info: "ℹ",
+};
+
+function ToastContainer({ toasts, dismiss }) {
+  if (toasts.length === 0) return null;
+  return (
+    <div className="mgcn-toast-container" aria-live="polite">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className={`mgcn-toast mgcn-toast--${t.type}${t.leaving ? " mgcn-toast--leaving" : ""}`}
+          role="alert"
+        >
+          <span className="mgcn-toast__icon">{TOAST_ICONS[t.type]}</span>
+          <div className="mgcn-toast__body">
+            <strong className="mgcn-toast__title">{t.title}</strong>
+            {t.message && <p className="mgcn-toast__msg">{t.message}</p>}
+          </div>
+          <button
+            className="mgcn-toast__close"
+            onClick={() => dismiss(t.id)}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+          <span className="mgcn-toast__progress" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Confirm dialog component
+// ─────────────────────────────────────────────────────────────
+const CONFIRM_ICONS = {
+  danger:  { emoji: "🗑️", bg: "#fff1ee", color: "#b6533f" },
+  warning: { emoji: "⚠️", bg: "#fff7df", color: "#7a5a10" },
+  info:    { emoji: "ℹ️", bg: "#e8f4fd", color: "#1a6fa8" },
+};
+
+function ConfirmDialog({ dialog, onConfirm, onCancel }) {
+  if (!dialog) return null;
+  const icon = CONFIRM_ICONS[dialog.variant] || CONFIRM_ICONS.danger;
+  return (
+    <div className="mgcn-confirm-overlay" onClick={onCancel}>
+      <div
+        className="mgcn-confirm-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="mgcn-confirm-title"
+      >
+        <div
+          className="mgcn-confirm-icon"
+          style={{ background: icon.bg, color: icon.color }}
+        >
+          {icon.emoji}
+        </div>
+        <h2 id="mgcn-confirm-title" className="mgcn-confirm-title">
+          {dialog.title}
+        </h2>
+        <p className="mgcn-confirm-msg">{dialog.message}</p>
+        <div className="mgcn-confirm-actions">
+          <button className="mgcn-confirm-cancel" onClick={onCancel}>
+            {dialog.cancelLabel}
+          </button>
+          <button
+            className={`mgcn-confirm-ok mgcn-confirm-ok--${dialog.variant}`}
+            onClick={onConfirm}
+          >
+            {dialog.confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Main page component
+// ─────────────────────────────────────────────────────────────
 function ManageGuideContent() {
   const [activeTab, setActiveTab] = useState("guides");
   const [actionMenu, setActionMenu] = useState(null);
   const [modalType, setModalType] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [emergencyTopics, setEmergencyTopics] = useState([]);
@@ -29,7 +184,11 @@ function ManageGuideContent() {
 
   const token = localStorage.getItem("token");
 
-  // ── Fetch all data ────────────────────────────────────────
+  // Notification hooks
+  const { toasts, dismiss, toast } = useToast();
+  const { dialog, confirm, handleConfirm, handleCancel } = useConfirm();
+
+  // ── Fetch all data ─────────────────────────────────────────
   useEffect(() => {
     async function fetchAll() {
       try {
@@ -77,7 +236,7 @@ function ManageGuideContent() {
     fetchAll();
   }, []);
 
-  // ── Helpers ───────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────
   const filteredGuides = useMemo(() => {
     return guides.filter((guide) => {
       const keyword = guideSearch.toLowerCase();
@@ -107,7 +266,7 @@ function ManageGuideContent() {
     return pet ? `${pet.emoji} ${pet.name}` : "—";
   }
 
-  // ── Action menu ───────────────────────────────────────────
+  // ── Action menu ────────────────────────────────────────────
   function openActionMenu(event, type, id) {
     const rect = event.currentTarget.getBoundingClientRect();
     const menuWidth = 180; const gap = 10;
@@ -119,7 +278,7 @@ function ManageGuideContent() {
   function closeActionMenu() { setActionMenu(null); }
   function closeModal() { setModalType(null); }
 
-  // ── Guide modal ───────────────────────────────────────────
+  // ── Guide modal ────────────────────────────────────────────
   function openAddGuideModal() {
     closeActionMenu();
     setGuideForm({ id: null, topicId: "", title: "", overview: "", steps: [], status: "Draft" });
@@ -133,13 +292,13 @@ function ManageGuideContent() {
     setModalType("guide");
   }
 
-  // ── Guide CRUD ────────────────────────────────────────────
+  // ── Guide CRUD ─────────────────────────────────────────────
   async function handleGuideSubmit(event) {
     event.preventDefault();
-    if (!guideForm.topicId) { alert("Please select an emergency topic."); return; }
-    if (!guideForm.title.trim()) { alert("Please enter the guide title."); return; }
+    if (!guideForm.topicId) { toast.warning("Missing field", "Please select an emergency topic."); return; }
+    if (!guideForm.title.trim()) { toast.warning("Missing field", "Please enter the guide title."); return; }
     if (guideForm.status === "Published" && guideForm.steps.length === 0) {
-      alert("A guide must have at least one step before publishing."); return;
+      toast.warning("Cannot publish", "A guide must have at least one step before publishing."); return;
     }
     const body = {
       emergencyID: guideForm.topicId,
@@ -155,28 +314,32 @@ function ManageGuideContent() {
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify(body),
         });
-        if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to update guide."); return; }
+        if (!res.ok) { const d = await res.json(); toast.error("Update failed", d.message || "Failed to update guide."); return; }
         setGuides((prev) => prev.map((g) => g.id === guideForm.id ? { ...g, topicId: Number(guideForm.topicId), title: guideForm.title, overview: guideForm.overview, steps: guideForm.steps, status: guideForm.status } : g));
+        toast.success("Guide updated", `"${guideForm.title}" has been saved successfully.`);
       } else {
         const res = await fetch(`${API_URL}/api/admin/guides`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify(body),
         });
-        if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to create guide."); return; }
+        if (!res.ok) { const d = await res.json(); toast.error("Create failed", d.message || "Failed to create guide."); return; }
         const d = await res.json();
         const topic = emergencyTopics.find((t) => t.id === Number(guideForm.topicId));
         setGuides((prev) => [...prev, { id: d.guideID, topicId: Number(guideForm.topicId), topicTitle: topic?.title || "", title: guideForm.title, overview: guideForm.overview, steps: guideForm.steps, status: guideForm.status }]);
+        toast.success("Guide created", `"${guideForm.title}" has been added successfully.`);
       }
       closeModal();
-    } catch { alert("Server error. Please try again."); }
+    } catch { toast.error("Server error", "Something went wrong. Please try again."); }
   }
 
   async function handleToggleGuideStatus(id) {
     const guide = guides.find((g) => g.id === id);
     if (!guide) return;
     if (guide.status === "Draft" && guide.steps.length === 0) {
-      alert("A guide must have at least one step before publishing."); return;
+      toast.warning("Cannot publish", "A guide must have at least one step before publishing.");
+      closeActionMenu();
+      return;
     }
     const newStatus = guide.status === "Published" ? "Draft" : "Published";
     try {
@@ -185,77 +348,106 @@ function ManageGuideContent() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ emergencyID: guide.topicId, guideTitle: guide.title, overview: guide.overview, steps: guide.steps, status: newStatus }),
       });
-      if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to update guide."); return; }
+      if (!res.ok) { const d = await res.json(); toast.error("Update failed", d.message || "Failed to update guide."); return; }
       setGuides((prev) => prev.map((g) => g.id === id ? { ...g, status: newStatus } : g));
-    } catch { alert("Server error."); }
+      toast.success(
+        newStatus === "Published" ? "Guide published" : "Moved to draft",
+        `"${guide.title}" is now ${newStatus === "Published" ? "live" : "in draft"}.`
+      );
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
   async function handleDeleteGuide(id) {
-    if (!window.confirm("Permanently delete this guide and all its steps? This cannot be undone.")) return;
+    closeActionMenu();
+    const guide = guides.find((g) => g.id === id);
+    const confirmed = await confirm({
+      title: "Delete Guide",
+      message: `Permanently delete "${guide?.title}"? All steps will also be removed. This cannot be undone.`,
+      confirmLabel: "Yes, Delete",
+      cancelLabel: "Cancel",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`${API_URL}/api/admin/guides/${id}`, {
         method: "DELETE", headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to delete guide."); return; }
+      if (!res.ok) { const d = await res.json(); toast.error("Delete failed", d.message || "Failed to delete guide."); return; }
       setGuides((prev) => prev.filter((g) => g.id !== id));
-    } catch { alert("Server error."); }
+      toast.success("Guide deleted", `"${guide?.title}" has been permanently removed.`);
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
-  // ── Steps (stored in guide's steps JSON) ─────────────────
+  // ── Steps ──────────────────────────────────────────────────
   function handleAddStep() {
-    if (!stepForm.instruction.trim()) { alert("Please enter the step instruction."); return; }
+    if (!stepForm.instruction.trim()) { toast.warning("Missing instruction", "Please enter the step instruction."); return; }
     const updated = [...guideForm.steps, stepForm.instruction.trim()];
     setGuideForm((prev) => ({ ...prev, steps: updated }));
     setStepForm({ index: null, instruction: "" });
+    toast.success("Step added", `Step ${updated.length} has been added.`);
   }
   function handleEditStep(index) {
     setStepForm({ index, instruction: guideForm.steps[index] });
   }
   function handleSaveStep() {
-    if (!stepForm.instruction.trim()) { alert("Please enter the step instruction."); return; }
+    if (!stepForm.instruction.trim()) { toast.warning("Missing instruction", "Please enter the step instruction."); return; }
     const updated = guideForm.steps.map((s, i) => i === stepForm.index ? stepForm.instruction.trim() : s);
     setGuideForm((prev) => ({ ...prev, steps: updated }));
     setStepForm({ index: null, instruction: "" });
+    toast.success("Step updated", `Step ${stepForm.index + 1} has been saved.`);
   }
   function handleDeleteStep(index) {
     const updated = guideForm.steps.filter((_, i) => i !== index);
     setGuideForm((prev) => ({ ...prev, steps: updated }));
     if (stepForm.index === index) setStepForm({ index: null, instruction: "" });
+    toast.info("Step removed", `Step ${index + 1} has been removed.`);
   }
 
-  // ── Media CRUD ────────────────────────────────────────────
+  // ── Media CRUD ─────────────────────────────────────────────
   function openAddMediaModal() { closeActionMenu(); setMediaForm({ id: null, guideId: "", type: "Image", title: "", url: "", caption: "", status: "Draft" }); setModalType("media"); }
   function openEditMediaModal(media) { closeActionMenu(); setMediaForm({ id: media.id, guideId: media.guideId, type: media.type, title: media.title, url: media.url, caption: media.caption, status: media.status }); setModalType("media"); }
 
   async function handleMediaSubmit(event) {
     event.preventDefault();
-    if (!mediaForm.guideId) { alert("Please select a guide."); return; }
-    if (!mediaForm.title.trim()) { alert("Please enter the media title."); return; }
-    if (!mediaForm.url.trim()) { alert("Please enter the media URL."); return; }
+    if (!mediaForm.guideId) { toast.warning("Missing field", "Please select a guide."); return; }
+    if (!mediaForm.title.trim()) { toast.warning("Missing field", "Please enter the media title."); return; }
+    if (!mediaForm.url.trim()) { toast.warning("Missing field", "Please enter the media URL."); return; }
     const body = { guideID: mediaForm.guideId, media_type: mediaForm.type.toLowerCase(), mediaTitle: mediaForm.title, caption: mediaForm.caption, mediaURL: mediaForm.url, mediaStatus: mediaForm.status };
     try {
       if (mediaForm.id) {
         const res = await fetch(`${API_URL}/api/admin/media/${mediaForm.id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-        if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to update media."); return; }
+        if (!res.ok) { const d = await res.json(); toast.error("Update failed", d.message || "Failed to update media."); return; }
         setMediaList((prev) => prev.map((m) => m.id === mediaForm.id ? { ...m, guideId: Number(mediaForm.guideId), type: mediaForm.type, title: mediaForm.title, url: mediaForm.url, caption: mediaForm.caption, status: mediaForm.status } : m));
+        toast.success("Media updated", `"${mediaForm.title}" has been saved.`);
       } else {
         const res = await fetch(`${API_URL}/api/admin/media`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-        if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to create media."); return; }
+        if (!res.ok) { const d = await res.json(); toast.error("Create failed", d.message || "Failed to create media."); return; }
         const d = await res.json();
         const guide = getGuideById(mediaForm.guideId);
         setMediaList((prev) => [...prev, { id: d.mediaID, guideId: Number(mediaForm.guideId), guideTitle: guide?.title || "", type: mediaForm.type, title: mediaForm.title, url: mediaForm.url, caption: mediaForm.caption, status: mediaForm.status }]);
+        toast.success("Media added", `"${mediaForm.title}" has been added successfully.`);
       }
       closeModal();
-    } catch { alert("Server error."); }
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
   async function handleDeleteMedia(id) {
-    if (!window.confirm("Permanently delete this media?")) return;
+    closeActionMenu();
+    const media = mediaList.find((m) => m.id === id);
+    const confirmed = await confirm({
+      title: "Delete Media",
+      message: `Permanently delete "${media?.title}"? This cannot be undone.`,
+      confirmLabel: "Yes, Delete",
+      cancelLabel: "Cancel",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`${API_URL}/api/admin/media/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to delete media."); return; }
+      if (!res.ok) { const d = await res.json(); toast.error("Delete failed", d.message || "Failed to delete media."); return; }
       setMediaList((prev) => prev.filter((m) => m.id !== id));
-    } catch { alert("Server error."); }
+      toast.success("Media deleted", `"${media?.title}" has been removed.`);
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
   async function handleToggleMediaStatus(id) {
@@ -264,43 +456,58 @@ function ManageGuideContent() {
     const newStatus = media.status === "Published" ? "Draft" : "Published";
     try {
       const res = await fetch(`${API_URL}/api/admin/media/${id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ guideID: media.guideId, media_type: media.type.toLowerCase(), mediaTitle: media.title, caption: media.caption, mediaURL: media.url, mediaStatus: newStatus }) });
-      if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to update media."); return; }
+      if (!res.ok) { const d = await res.json(); toast.error("Update failed", d.message || "Failed to update media."); return; }
       setMediaList((prev) => prev.map((m) => m.id === id ? { ...m, status: newStatus } : m));
-    } catch { alert("Server error."); }
+      toast.success(
+        newStatus === "Published" ? "Media published" : "Moved to draft",
+        `"${media.title}" is now ${newStatus === "Published" ? "live" : "in draft"}.`
+      );
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
-  // ── Vet Advice CRUD ───────────────────────────────────────
+  // ── Vet Advice CRUD ────────────────────────────────────────
   function openAddAdviceModal() { closeActionMenu(); setAdviceForm({ id: null, guideId: "", advice: "", urgency: "General", status: "Draft" }); setModalType("advice"); }
   function openEditAdviceModal(advice) { closeActionMenu(); setAdviceForm({ id: advice.id, guideId: advice.guideId, advice: advice.advice, urgency: advice.urgency, status: advice.status }); setModalType("advice"); }
 
   async function handleAdviceSubmit(event) {
     event.preventDefault();
-    if (!adviceForm.guideId) { alert("Please select a guide."); return; }
-    if (!adviceForm.advice.trim()) { alert("Please enter veterinary advice."); return; }
+    if (!adviceForm.guideId) { toast.warning("Missing field", "Please select a guide."); return; }
+    if (!adviceForm.advice.trim()) { toast.warning("Missing field", "Please enter veterinary advice."); return; }
     const body = { guideID: adviceForm.guideId, advice_text: adviceForm.advice, urgency: adviceForm.urgency, adviceStatus: adviceForm.status };
     try {
       if (adviceForm.id) {
         const res = await fetch(`${API_URL}/api/admin/vet-advice/${adviceForm.id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-        if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to update advice."); return; }
+        if (!res.ok) { const d = await res.json(); toast.error("Update failed", d.message || "Failed to update advice."); return; }
         setVetAdviceList((prev) => prev.map((a) => a.id === adviceForm.id ? { ...a, guideId: Number(adviceForm.guideId), advice: adviceForm.advice, urgency: adviceForm.urgency, status: adviceForm.status } : a));
+        toast.success("Advice updated", "Veterinary advice has been saved successfully.");
       } else {
         const res = await fetch(`${API_URL}/api/admin/vet-advice`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-        if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to create advice."); return; }
+        if (!res.ok) { const d = await res.json(); toast.error("Create failed", d.message || "Failed to create advice."); return; }
         const d = await res.json();
         const guide = getGuideById(adviceForm.guideId);
         setVetAdviceList((prev) => [...prev, { id: d.adviceID, guideId: Number(adviceForm.guideId), guideTitle: guide?.title || "", advice: adviceForm.advice, urgency: adviceForm.urgency, status: adviceForm.status }]);
+        toast.success("Advice added", "New veterinary advice has been created.");
       }
       closeModal();
-    } catch { alert("Server error."); }
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
   async function handleDeleteAdvice(id) {
-    if (!window.confirm("Permanently delete this vet advice?")) return;
+    closeActionMenu();
+    const confirmed = await confirm({
+      title: "Delete Vet Advice",
+      message: "Permanently delete this veterinary advice? This cannot be undone.",
+      confirmLabel: "Yes, Delete",
+      cancelLabel: "Cancel",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`${API_URL}/api/admin/vet-advice/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to delete advice."); return; }
+      if (!res.ok) { const d = await res.json(); toast.error("Delete failed", d.message || "Failed to delete advice."); return; }
       setVetAdviceList((prev) => prev.filter((a) => a.id !== id));
-    } catch { alert("Server error."); }
+      toast.success("Advice deleted", "Veterinary advice has been removed.");
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
   async function handleToggleAdviceStatus(id) {
@@ -309,12 +516,16 @@ function ManageGuideContent() {
     const newStatus = advice.status === "Published" ? "Draft" : "Published";
     try {
       const res = await fetch(`${API_URL}/api/admin/vet-advice/${id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ guideID: advice.guideId, advice_text: advice.advice, urgency: advice.urgency, adviceStatus: newStatus }) });
-      if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to update advice."); return; }
+      if (!res.ok) { const d = await res.json(); toast.error("Update failed", d.message || "Failed to update advice."); return; }
       setVetAdviceList((prev) => prev.map((a) => a.id === id ? { ...a, status: newStatus } : a));
-    } catch { alert("Server error."); }
+      toast.success(
+        newStatus === "Published" ? "Advice published" : "Moved to draft",
+        `Advice is now ${newStatus === "Published" ? "live" : "in draft"}.`
+      );
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
-  // ── Floating action menu ──────────────────────────────────
+  // ── Floating action menu ───────────────────────────────────
   function renderFloatingActionMenu() {
     if (!actionMenu) return null;
 
@@ -330,7 +541,7 @@ function ManageGuideContent() {
             <button onClick={() => { handleToggleGuideStatus(guide.id); closeActionMenu(); }}>
               {guide.status === "Published" ? "Move to Draft" : "Publish"}
             </button>
-            <button className="danger-text" onClick={() => { handleDeleteGuide(guide.id); closeActionMenu(); }}>Delete</button>
+            <button className="danger-text" onClick={() => handleDeleteGuide(guide.id)}>Delete</button>
           </div>
         </>
       );
@@ -347,7 +558,7 @@ function ManageGuideContent() {
             <button onClick={() => { handleToggleMediaStatus(media.id); closeActionMenu(); }}>
               {media.status === "Published" ? "Move to Draft" : "Publish"}
             </button>
-            <button className="danger-text" onClick={() => { handleDeleteMedia(media.id); closeActionMenu(); }}>Delete</button>
+            <button className="danger-text" onClick={() => handleDeleteMedia(media.id)}>Delete</button>
           </div>
         </>
       );
@@ -364,7 +575,7 @@ function ManageGuideContent() {
             <button onClick={() => { handleToggleAdviceStatus(advice.id); closeActionMenu(); }}>
               {advice.status === "Published" ? "Move to Draft" : "Publish"}
             </button>
-            <button className="danger-text" onClick={() => { handleDeleteAdvice(advice.id); closeActionMenu(); }}>Delete</button>
+            <button className="danger-text" onClick={() => handleDeleteAdvice(advice.id)}>Delete</button>
           </div>
         </>
       );
@@ -373,8 +584,7 @@ function ManageGuideContent() {
     return null;
   }
 
-
-  // ── View Details modal ────────────────────────────────────
+  // ── View Details modal ─────────────────────────────────────
   function renderViewDetailsModal() {
     if (!viewGuide) return null;
     const steps = viewGuide.steps || [];
@@ -420,7 +630,7 @@ function ManageGuideContent() {
     );
   }
 
-  // ── Guide modal ───────────────────────────────────────────
+  // ── Guide modal ────────────────────────────────────────────
   function renderGuideModal() {
     if (modalType !== "guide") return null;
     return (
@@ -502,26 +712,18 @@ function ManageGuideContent() {
     );
   }
 
-  // ── Media modal ───────────────────────────────────────────
+  // ── Media modal ────────────────────────────────────────────
   function handleImageUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
-
-    const maxSize = 500 * 1024; // 500KB
-
+    const maxSize = 500 * 1024;
     if (file.size > maxSize) {
-      alert("Image is too large. Please upload an image smaller than 500KB.");
+      toast.warning("File too large", "Please upload an image smaller than 500KB.");
       e.target.value = "";
       return;
     }
-
     const reader = new FileReader();
-    reader.onload = () =>
-      setMediaForm((prev) => ({
-        ...prev,
-        url: reader.result,
-      }));
-
+    reader.onload = () => setMediaForm((prev) => ({ ...prev, url: reader.result }));
     reader.readAsDataURL(file);
   }
 
@@ -563,15 +765,7 @@ function ManageGuideContent() {
                   <img
                     src={mediaForm.url}
                     alt="preview"
-                    style={{
-                      marginTop: 10,
-                      width: "100%",
-                      maxHeight: 260,
-                      objectFit: "contain",
-                      borderRadius: 8,
-                      background: "#f6f6f6",
-                      display: "block"
-                    }}
+                    style={{ marginTop: 10, width: "100%", maxHeight: 260, objectFit: "contain", borderRadius: 8, background: "#f6f6f6", display: "block" }}
                   />
                 )}
                 {mediaForm.url && !mediaForm.url.startsWith("data:") && (
@@ -606,7 +800,7 @@ function ManageGuideContent() {
     );
   }
 
-  // ── Advice modal ──────────────────────────────────────────
+  // ── Advice modal ───────────────────────────────────────────
   function renderAdviceModal() {
     if (modalType !== "advice") return null;
     return (
@@ -653,12 +847,16 @@ function ManageGuideContent() {
     );
   }
 
-  // ── Main render ───────────────────────────────────────────
+  // ── Main render ────────────────────────────────────────────
   if (loading) return <div className="admin-page"><p>Loading…</p></div>;
   if (error) return <div className="admin-page"><p style={{ color: "crimson" }}>{error}</p></div>;
 
   return (
     <div className="admin-page manage-guide-page">
+      {/* Notification layers */}
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
+      <ConfirmDialog dialog={dialog} onConfirm={handleConfirm} onCancel={handleCancel} />
+
       {renderFloatingActionMenu()}
       {renderGuideModal()}
       {renderViewDetailsModal()}

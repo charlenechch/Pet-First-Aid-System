@@ -120,7 +120,7 @@ function PetOwnerDashboard() {
 
   if (loading) {
     return (
-      <div className="admin-page">
+      <div className="admin-page shared-profile-page petowner-profile-page">
         <div className="petowner-hero">
           <div className="petowner-hero-text">
             <p className="page-subtitle">Welcome back</p>
@@ -141,7 +141,7 @@ function PetOwnerDashboard() {
 
   if (error) {
     return (
-      <div className="admin-page">
+      <div className="admin-page shared-profile-page petowner-profile-page">
         <div className="petowner-hero">
           <div className="petowner-hero-text">
             <p className="page-subtitle">Welcome back</p>
@@ -169,7 +169,7 @@ function PetOwnerDashboard() {
   }
 
   return (
-    <div className="admin-page">
+    <div className="admin-page shared-profile-page petowner-profile-page">
       <div className="petowner-hero">
         <div className="petowner-hero-text">
           <p className="page-subtitle">Welcome back</p>

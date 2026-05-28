@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import "../../styles/admin.css";
 import "../../styles/manageQuiz.css";
+import "../../styles/mgcNotifications.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -14,6 +15,139 @@ function relativeTime(dateString) {
   return `${Math.floor(diff / 86400)} days ago`;
 }
 
+// ─────────────────────────────────────────────────────────────
+// Toast hook
+// ─────────────────────────────────────────────────────────────
+function useToast() {
+  const [toasts, setToasts] = useState([]);
+  const timers = useRef({});
+
+  const dismiss = useCallback((id) => {
+    setToasts((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, leaving: true } : t))
+    );
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 350);
+  }, []);
+
+  const show = useCallback(
+    (type, title, message) => {
+      const id = Date.now() + Math.random();
+      setToasts((prev) => [...prev, { id, type, title, message, leaving: false }]);
+      timers.current[id] = setTimeout(() => dismiss(id), 4000);
+      return id;
+    },
+    [dismiss]
+  );
+
+  const toast = useMemo(
+    () => ({
+      success: (title, msg) => show("success", title, msg),
+      error: (title, msg) => show("error", title, msg),
+      warning: (title, msg) => show("warning", title, msg),
+      info: (title, msg) => show("info", title, msg),
+    }),
+    [show]
+  );
+
+  return { toasts, dismiss, toast };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Confirm dialog hook
+// ─────────────────────────────────────────────────────────────
+function useConfirm() {
+  const [dialog, setDialog] = useState(null);
+  const resolverRef = useRef(null);
+
+  const confirm = useCallback(({ title, message, confirmLabel = "Confirm", cancelLabel = "Cancel", variant = "danger" }) => {
+    return new Promise((resolve) => {
+      resolverRef.current = resolve;
+      setDialog({ title, message, confirmLabel, cancelLabel, variant });
+    });
+  }, []);
+
+  function handleConfirm() {
+    setDialog(null);
+    resolverRef.current?.(true);
+  }
+  function handleCancel() {
+    setDialog(null);
+    resolverRef.current?.(false);
+  }
+
+  return { dialog, confirm, handleConfirm, handleCancel };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Toast renderer
+// ─────────────────────────────────────────────────────────────
+const TOAST_ICONS = { success: "✓", error: "✕", warning: "⚠", info: "ℹ" };
+
+function ToastContainer({ toasts, dismiss }) {
+  if (toasts.length === 0) return null;
+  return (
+    <div className="mgcn-toast-container" aria-live="polite">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className={`mgcn-toast mgcn-toast--${t.type}${t.leaving ? " mgcn-toast--leaving" : ""}`}
+          role="alert"
+        >
+          <span className="mgcn-toast__icon">{TOAST_ICONS[t.type]}</span>
+          <div className="mgcn-toast__body">
+            <strong className="mgcn-toast__title">{t.title}</strong>
+            {t.message && <p className="mgcn-toast__msg">{t.message}</p>}
+          </div>
+          <button className="mgcn-toast__close" onClick={() => dismiss(t.id)} aria-label="Dismiss">×</button>
+          <span className="mgcn-toast__progress" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Confirm dialog renderer
+// ─────────────────────────────────────────────────────────────
+const CONFIRM_ICONS = {
+  danger:  { emoji: "🗑️", bg: "#fff1ee", color: "#b6533f" },
+  warning: { emoji: "⚠️", bg: "#fff7df", color: "#7a5a10" },
+  info:    { emoji: "ℹ️", bg: "#e8f4fd", color: "#1a6fa8" },
+};
+
+function ConfirmDialog({ dialog, onConfirm, onCancel }) {
+  if (!dialog) return null;
+  const icon = CONFIRM_ICONS[dialog.variant] || CONFIRM_ICONS.danger;
+  return (
+    <div className="mgcn-confirm-overlay" onClick={onCancel}>
+      <div
+        className="mgcn-confirm-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="mgcn-confirm-title"
+      >
+        <div className="mgcn-confirm-icon" style={{ background: icon.bg, color: icon.color }}>
+          {icon.emoji}
+        </div>
+        <h2 id="mgcn-confirm-title" className="mgcn-confirm-title">{dialog.title}</h2>
+        <p className="mgcn-confirm-msg">{dialog.message}</p>
+        <div className="mgcn-confirm-actions">
+          <button className="mgcn-confirm-cancel" onClick={onCancel}>{dialog.cancelLabel}</button>
+          <button className={`mgcn-confirm-ok mgcn-confirm-ok--${dialog.variant}`} onClick={onConfirm}>
+            {dialog.confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Main page
+// ─────────────────────────────────────────────────────────────
 function ManageQuiz() {
   const [activeTab, setActiveTab] = useState("quizzes");
   const [actionMenu, setActionMenu] = useState(null);
@@ -35,7 +169,10 @@ function ManageQuiz() {
 
   const token = localStorage.getItem("token");
 
-  // ── Fetch all data ────────────────────────────────────────
+  const { toasts, dismiss, toast } = useToast();
+  const { dialog, confirm, handleConfirm, handleCancel } = useConfirm();
+
+  // ── Fetch all data ─────────────────────────────────────────
   useEffect(() => {
     async function fetchAll() {
       try {
@@ -49,7 +186,6 @@ function ManageQuiz() {
         const [g, qz, qs, r] = await Promise.all([guidesRes.json(), quizzesRes.json(), questionsRes.json(), resultsRes.json()]);
         setGuides((g.guides || []).map((gd) => ({ id: gd.guideID, title: gd.guideTitle, topicTitle: gd.topicTitle })));
         setQuizzes((qz.quizzes || []).map((q) => ({ id: q.quizID, title: q.quizTitle, guideId: q.guideID, guideTitle: q.guideTitle, passingScore: q.pass_mark, status: q.quizStatus, description: q.description || "" })));
-        // Parse all questions upfront for question count display
         const allQuestions = (qs.questions || []).map((q) => {
           const texts = q.answerTexts ? q.answerTexts.split("|||") : [];
           const corrects = q.answerCorrect ? q.answerCorrect.split(",") : [];
@@ -67,7 +203,7 @@ function ManageQuiz() {
     fetchAll();
   }, []);
 
-  // ── Load questions when questions modal opens ─────────────
+  // ── Load questions for a quiz ──────────────────────────────
   async function loadQuestions(quizId) {
     try {
       const res = await fetch(`${API_URL}/api/admin/questions?quizID=${quizId}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -87,7 +223,7 @@ function ManageQuiz() {
     } catch { /* silent */ }
   }
 
-  // ── Helpers ───────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────
   const filteredQuizzes = useMemo(() => {
     return quizzes.filter((quiz) => {
       const keyword = searchKeyword.toLowerCase();
@@ -102,7 +238,7 @@ function ManageQuiz() {
   function getQuizById(id) { return quizzes.find((q) => q.id === Number(id)); }
   function getQuestionCount(quizId) { return questions.filter((q) => q.quizId === quizId).length; }
 
-  // ── Action menu ───────────────────────────────────────────
+  // ── Action menu ────────────────────────────────────────────
   function openActionMenu(event, type, id) {
     const rect = event.currentTarget.getBoundingClientRect();
     const menuWidth = 190; const gap = 10;
@@ -114,7 +250,7 @@ function ManageQuiz() {
   function closeActionMenu() { setActionMenu(null); }
   function closeModal() { setModalType(null); setSelectedQuizId(null); }
 
-  // ── Quiz CRUD ─────────────────────────────────────────────
+  // ── Quiz CRUD ──────────────────────────────────────────────
   function openAddQuizModal() {
     closeActionMenu();
     setQuizForm({ id: null, title: "", guideId: "", passingScore: 70, status: "draft" });
@@ -128,52 +264,72 @@ function ManageQuiz() {
 
   async function handleQuizSubmit(event) {
     event.preventDefault();
-    if (!quizForm.title.trim()) { alert("Please enter quiz title."); return; }
-    if (!quizForm.guideId) { alert("Please select a guide."); return; }
-    if (quizForm.passingScore < 1 || quizForm.passingScore > 100) { alert("Passing score must be between 1 and 100."); return; }
+    if (!quizForm.title.trim()) { toast.warning("Missing field", "Please enter the quiz title."); return; }
+    if (!quizForm.guideId) { toast.warning("Missing field", "Please select a guide."); return; }
+    if (quizForm.passingScore < 1 || quizForm.passingScore > 100) { toast.warning("Invalid score", "Passing score must be between 1 and 100."); return; }
     if (quizForm.status === "published" && quizForm.id && getQuestionCount(quizForm.id) === 0) {
-      alert("A quiz must have at least one question before publishing."); return;
+      toast.warning("Cannot publish", "A quiz must have at least one question before publishing."); return;
     }
     const body = { guideID: quizForm.guideId, quizTitle: quizForm.title, pass_mark: quizForm.passingScore, quizStatus: quizForm.status };
     try {
       if (quizForm.id) {
         const res = await fetch(`${API_URL}/api/admin/quizzes/${quizForm.id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-        if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to update quiz."); return; }
+        if (!res.ok) { const d = await res.json(); toast.error("Update failed", d.message || "Failed to update quiz."); return; }
         setQuizzes((prev) => prev.map((q) => q.id === quizForm.id ? { ...q, title: quizForm.title, guideId: Number(quizForm.guideId), passingScore: Number(quizForm.passingScore), status: quizForm.status } : q));
+        toast.success("Quiz updated", `"${quizForm.title}" has been saved successfully.`);
       } else {
         const res = await fetch(`${API_URL}/api/admin/quizzes`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-        if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to create quiz."); return; }
+        if (!res.ok) { const d = await res.json(); toast.error("Create failed", d.message || "Failed to create quiz."); return; }
         const d = await res.json();
         const guide = guides.find((g) => g.id === Number(quizForm.guideId));
         setQuizzes((prev) => [...prev, { id: d.quizID, title: quizForm.title, guideId: Number(quizForm.guideId), guideTitle: guide?.title || "", passingScore: Number(quizForm.passingScore), status: quizForm.status }]);
+        toast.success("Quiz created", `"${quizForm.title}" has been added successfully.`);
       }
       closeModal();
-    } catch { alert("Server error."); }
+    } catch { toast.error("Server error", "Something went wrong. Please try again."); }
   }
 
   async function handleToggleQuizStatus(id) {
     const quiz = quizzes.find((q) => q.id === id);
     if (!quiz) return;
     const newStatus = quiz.status === "published" ? "draft" : "published";
-    if (newStatus === "published" && getQuestionCount(id) === 0) { alert("A quiz must have at least one question before publishing."); return; }
+    if (newStatus === "published" && getQuestionCount(id) === 0) {
+      toast.warning("Cannot publish", "A quiz must have at least one question before publishing.");
+      closeActionMenu();
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/api/admin/quizzes/${id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ guideID: quiz.guideId, quizTitle: quiz.title, pass_mark: quiz.passingScore, quizStatus: newStatus }) });
-      if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to update quiz."); return; }
+      if (!res.ok) { const d = await res.json(); toast.error("Update failed", d.message || "Failed to update quiz."); return; }
       setQuizzes((prev) => prev.map((q) => q.id === id ? { ...q, status: newStatus } : q));
-    } catch { alert("Server error."); }
+      toast.success(
+        newStatus === "published" ? "Quiz published" : "Moved to draft",
+        `"${quiz.title}" is now ${newStatus === "published" ? "live" : "in draft"}.`
+      );
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
   async function handleDeleteQuiz(id) {
-    if (!window.confirm("Permanently delete this quiz and all its questions?")) return;
+    closeActionMenu();
+    const quiz = quizzes.find((q) => q.id === id);
+    const confirmed = await confirm({
+      title: "Delete Quiz",
+      message: `Permanently delete "${quiz?.title}" and all its questions? This cannot be undone.`,
+      confirmLabel: "Yes, Delete",
+      cancelLabel: "Cancel",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`${API_URL}/api/admin/quizzes/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to delete quiz."); return; }
+      if (!res.ok) { const d = await res.json(); toast.error("Delete failed", d.message || "Failed to delete quiz."); return; }
       setQuizzes((prev) => prev.filter((q) => q.id !== id));
       setQuestions((prev) => prev.filter((q) => q.quizId !== id));
-    } catch { alert("Server error."); }
+      toast.success("Quiz deleted", `"${quiz?.title}" has been permanently removed.`);
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
-  // ── Questions CRUD ────────────────────────────────────────
+  // ── Questions CRUD ─────────────────────────────────────────
   function openQuestionsModal(quizId) {
     closeActionMenu();
     setSelectedQuizId(quizId);
@@ -193,42 +349,54 @@ function ManageQuiz() {
       optionC: question.options[2] || "", optionD: question.options[3] || "",
       correctAnswer: question.correctAnswer,
     });
-    setTimeout(() => { document.querySelector(".question-form")?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
+    setTimeout(() => {
+      document.querySelector(".question-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   }
 
   async function handleQuestionSubmit(event) {
     event.preventDefault();
-    if (!questionForm.questionText.trim()) { alert("Please enter the question."); return; }
+    if (!questionForm.questionText.trim()) { toast.warning("Missing field", "Please enter the question text."); return; }
     const options = [questionForm.optionA, questionForm.optionB, questionForm.optionC, questionForm.optionD].filter((o) => o.trim() !== "");
-    if (options.length < 2) { alert("Please enter at least two answer options."); return; }
-    if (!questionForm.correctAnswer) { alert("Please select the correct answer."); return; }
+    if (options.length < 2) { toast.warning("Not enough options", "Please enter at least two answer options."); return; }
+    if (!questionForm.correctAnswer) { toast.warning("Missing answer", "Please select the correct answer."); return; }
 
     const body = { quizID: selectedQuizId, text: questionForm.questionText, options, correctAnswer: questionForm.correctAnswer, order_num: getQuestionCount(selectedQuizId) + 1 };
     try {
       if (questionForm.id) {
         const res = await fetch(`${API_URL}/api/admin/questions/${questionForm.id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-        if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to update question."); return; }
+        if (!res.ok) { const d = await res.json(); toast.error("Update failed", d.message || "Failed to update question."); return; }
         setQuestions((prev) => prev.map((q) => q.id === questionForm.id ? { ...q, questionText: questionForm.questionText, options, correctAnswer: questionForm.correctAnswer } : q));
+        toast.success("Question updated", "The question has been saved successfully.");
       } else {
         const res = await fetch(`${API_URL}/api/admin/questions`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-        if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to create question."); return; }
+        if (!res.ok) { const d = await res.json(); toast.error("Create failed", d.message || "Failed to create question."); return; }
         const d = await res.json();
         setQuestions((prev) => [...prev, { id: d.questionID, quizId: selectedQuizId, questionText: questionForm.questionText, options, correctAnswer: questionForm.correctAnswer }]);
+        toast.success("Question added", `Question ${getQuestionCount(selectedQuizId) + 1} has been added.`);
       }
       resetQuestionForm(selectedQuizId);
-    } catch { alert("Server error."); }
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
   async function handleDeleteQuestion(id) {
-    if (!window.confirm("Delete this question?")) return;
+    const confirmed = await confirm({
+      title: "Delete Question",
+      message: "Permanently delete this question? This cannot be undone.",
+      confirmLabel: "Yes, Delete",
+      cancelLabel: "Cancel",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`${API_URL}/api/admin/questions/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) { const d = await res.json(); alert(d.message || "Failed to delete question."); return; }
+      if (!res.ok) { const d = await res.json(); toast.error("Delete failed", d.message || "Failed to delete question."); return; }
       setQuestions((prev) => prev.filter((q) => q.id !== id));
-    } catch { alert("Server error."); }
+      toast.success("Question deleted", "The question has been removed.");
+    } catch { toast.error("Server error", "Something went wrong."); }
   }
 
-  // ── Action menu render ────────────────────────────────────
+  // ── Action menu render ─────────────────────────────────────
   function renderActionMenu() {
     if (!actionMenu || actionMenu.type !== "quiz") return null;
     const quiz = quizzes.find((q) => q.id === actionMenu.id);
@@ -242,13 +410,13 @@ function ManageQuiz() {
           <button onClick={() => { handleToggleQuizStatus(quiz.id); closeActionMenu(); }}>
             {quiz.status === "published" ? "Move to Draft" : "Publish"}
           </button>
-          <button className="danger-text" onClick={() => { handleDeleteQuiz(quiz.id); closeActionMenu(); }}>Delete</button>
+          <button className="danger-text" onClick={() => handleDeleteQuiz(quiz.id)}>Delete</button>
         </div>
       </>
     );
   }
 
-  // ── Quiz modal ────────────────────────────────────────────
+  // ── Quiz modal ─────────────────────────────────────────────
   function renderQuizModal() {
     if (modalType !== "quiz") return null;
     return (
@@ -291,7 +459,7 @@ function ManageQuiz() {
     );
   }
 
-  // ── Questions modal ───────────────────────────────────────
+  // ── Questions modal ────────────────────────────────────────
   function renderQuestionsModal() {
     if (modalType !== "questions") return null;
     const selectedQuiz = getQuizById(selectedQuizId);
@@ -361,6 +529,10 @@ function ManageQuiz() {
 
   return (
     <div className="admin-page">
+      {/* Notification layers */}
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
+      <ConfirmDialog dialog={dialog} onConfirm={handleConfirm} onCancel={handleCancel} />
+
       {renderActionMenu()}
       {renderQuizModal()}
       {renderQuestionsModal()}

@@ -29,7 +29,6 @@ function AdminProfile() {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [saveMsg, setSaveMsg] = useState("");
 
   const [adminProfile, setAdminProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone_no: "", bio: "" });
@@ -61,7 +60,6 @@ function AdminProfile() {
   // ── Edit profile ──────────────────────────────────────────
   function openEditModal() {
     setProfileForm({ name: adminProfile.name, email: adminProfile.email, phone_no: adminProfile.phone_no || "", bio: adminProfile.bio || "" });
-    setSaveMsg("");
     setIsEditModalOpen(true);
   }
 
@@ -118,7 +116,6 @@ function AdminProfile() {
   // ── Password ──────────────────────────────────────────────
   function openPasswordModal() {
     setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    setSaveMsg("");
     setIsPasswordModalOpen(true);
   }
 

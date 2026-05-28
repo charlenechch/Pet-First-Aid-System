@@ -1,28 +1,215 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { apiRequest } from "../../api";
 import "../../styles/admin.css";
 import "../../styles/petOwner.css";
+import "../../styles/feedback.css"; 
+
+/* ─────────────────────────────────────────────────────────────
+   Toast system
+   ───────────────────────────────────────────────────────────── */
+
+let toastId = 0;
+
+function useToast() {
+  const [toasts, setToasts] = useState([]);
+
+  const addToast = useCallback((message, type = "success") => {
+    const id = ++toastId;
+    setToasts((prev) => [...prev, { id, message, type, exiting: false }]);
+
+    setTimeout(() => {
+      setToasts((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, exiting: true } : t))
+      );
+    }, 2800);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3100);
+  }, []);
+
+  return { toasts, addToast };
+}
+
+const TOAST_ICONS = { success: "✅", error: "⚠️", warning: "⚡" };
+
+function ToastPortal({ toasts }) {
+  if (toasts.length === 0) return null;
+  return (
+    <div className="fb-toast-portal" role="status" aria-live="polite">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className={`fb-toast fb-toast-${t.type}${t.exiting ? " fb-toast-exit" : ""}`}
+        >
+          <span className="fb-toast-icon">{TOAST_ICONS[t.type] ?? "ℹ️"}</span>
+          <span>{t.message}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Success submit modal
+   ───────────────────────────────────────────────────────────── */
+
+function SuccessModal({ submission, onClose, onSubmitAnother }) {
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function handleBackdrop(e) {
+    if (e.target === e.currentTarget) onClose();
+  }
+
+  function renderStars(rating) {
+    return "★".repeat(Number(rating)) + "☆".repeat(5 - Number(rating));
+  }
+
+  return (
+    <div
+      className="fb-overlay"
+      onClick={handleBackdrop}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="fb-success-title"
+    >
+      <div className="fb-modal">
+        {/* Hero */}
+        <div className="fb-success-modal-hero">
+          <div className="fb-success-icon-ring" aria-hidden="true">🎉</div>
+          <h2 id="fb-success-title">Feedback Submitted!</h2>
+          <p>
+            Thank you for sharing your thoughts. Your feedback helps us improve
+            guides for every pet owner.
+          </p>
+        </div>
+
+        {/* Summary */}
+        <div className="fb-success-modal-body">
+          <div className="fb-success-summary">
+            <div className="fb-success-summary-row">
+              <span className="fb-success-summary-label">Topic</span>
+              <span className="fb-success-summary-value">
+                {submission.guideTitle}
+              </span>
+            </div>
+
+            <div className="fb-success-summary-row">
+              <span className="fb-success-summary-label">Rating</span>
+              <span className="fb-success-stars">
+                {renderStars(submission.rating)}
+              </span>
+            </div>
+
+            <div className="fb-success-summary-row">
+              <span className="fb-success-summary-label">Message</span>
+              <span className="fb-success-summary-value">
+                "{submission.message}"
+              </span>
+            </div>
+          </div>
+
+          <div className="fb-success-actions">
+            <button className="fb-btn-secondary" onClick={onSubmitAnother}>
+              Submit Another
+            </button>
+            <button className="fb-btn-primary" onClick={onClose}>
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Clear-form confirm modal
+   ───────────────────────────────────────────────────────────── */
+
+function ClearConfirmModal({ onCancel, onConfirm }) {
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") onCancel();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  function handleBackdrop(e) {
+    if (e.target === e.currentTarget) onCancel();
+  }
+
+  return (
+    <div
+      className="fb-overlay"
+      onClick={handleBackdrop}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="fb-clear-title"
+    >
+      <div className="fb-modal">
+        <div className="fb-confirm-modal-body">
+          <div className="fb-confirm-icon-ring" aria-hidden="true">🗑️</div>
+          <h2 id="fb-clear-title">Clear This Form?</h2>
+          <p>
+            All your current selections and typed text will be lost. This
+            cannot be undone.
+          </p>
+          <div className="fb-confirm-actions">
+            <button className="fb-btn-cancel" onClick={onCancel}>
+              Keep Editing
+            </button>
+            <button className="fb-btn-warn" onClick={onConfirm}>
+              Yes, Clear
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Helpers
+   ───────────────────────────────────────────────────────────── */
+
+const EMPTY_FORM = { emergencyID: "", rating: 0, message: "" };
+
+function isFormDirty(form) {
+  return form.emergencyID !== "" || form.rating !== 0 || form.message.trim() !== "";
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Main page
+   ───────────────────────────────────────────────────────────── */
 
 function PetOwnerFeedback() {
-  const [profile, setProfile] = useState({
-    name: "",
-    email: "",
-  });
+  const { toasts, addToast } = useToast();
 
+  const [profile, setProfile] = useState({ name: "", email: "" });
   const [feedbackList, setFeedbackList] = useState([]);
   const [guideOptions, setGuideOptions] = useState([]);
 
-  const [form, setForm] = useState({
-    emergencyID: "",
-    rating: 0,
-    message: "",
-  });
-
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [touched, setTouched] = useState({});   // tracks which fields were interacted with
   const [hoverRating, setHoverRating] = useState(0);
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Modal visibility
+  const [successSubmission, setSuccessSubmission] = useState(null); // holds submitted data
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  /* ── Load ─────────────────────────────────────────────────── */
   useEffect(() => {
     let isCancelled = false;
 
@@ -44,79 +231,78 @@ function PetOwnerFeedback() {
           email: profileData.user?.email || "",
         });
 
-        const formattedTopics = (topicsData.topics || []).map((topic) => ({
-          emergencyID: topic.emergencyID,
-          title: topic.topicTitle,
-          petName: topic.petName,
-          icon: topic.icon || "🐾",
-          severity: topic.severity,
-        }));
+        setGuideOptions(
+          (topicsData.topics || []).map((t) => ({
+            emergencyID: t.emergencyID,
+            title: t.topicTitle,
+            petName: t.petName,
+            icon: t.icon || "🐾",
+            severity: t.severity,
+          }))
+        );
 
-        const formattedFeedback = (feedbackData.feedback || []).map((item) => ({
-          id: item.feedbackID,
-          emergencyID: item.emergencyID,
-          guideTitle: item.topicTitle,
-          rating: item.rating,
-          message: item.message,
-          submittedAt: item.submitted_at
-            ? new Date(item.submitted_at).toLocaleString("en-MY", {
-                timeZone: "Asia/Kuala_Lumpur",
-                year: "numeric",
-                month: "short",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })
-            : "-",
-          status:
-            item.status === "reviewed" || item.status === "Reviewed"
-              ? "Reviewed"
-              : "New",
-        }));
-
-        setGuideOptions(formattedTopics);
-        setFeedbackList(formattedFeedback);
-      } catch (error) {
+        setFeedbackList(
+          (feedbackData.feedback || []).map((item) => ({
+            id: item.feedbackID,
+            emergencyID: item.emergencyID,
+            guideTitle: item.topicTitle,
+            rating: item.rating,
+            message: item.message,
+            submittedAt: item.submitted_at
+              ? new Date(item.submitted_at).toLocaleString("en-MY", {
+                  timeZone: "Asia/Kuala_Lumpur",
+                  year: "numeric",
+                  month: "short",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                })
+              : "-",
+            status:
+              item.status === "reviewed" || item.status === "Reviewed"
+                ? "Reviewed"
+                : "New",
+          }))
+        );
+      } catch (err) {
         if (isCancelled) return;
-
-        console.error("Load feedback page error:", error);
-        setError(error.message || "Failed to load feedback page.");
+        setError(err.message || "Failed to load feedback page.");
       } finally {
-        if (!isCancelled) {
-          setLoading(false);
-        }
+        if (!isCancelled) setLoading(false);
       }
     }
 
     loadFeedbackPage();
-
-    return () => {
-      isCancelled = true;
-    };
+    return () => { isCancelled = true; };
   }, []);
 
-  async function handleSubmit(event) {
-    event.preventDefault();
+  /* ── Inline validation ────────────────────────────────────── */
+  function getErrors(f) {
+    const errs = {};
+    if (!f.emergencyID) errs.emergencyID = "Please select a topic.";
+    if (f.rating === 0) errs.rating = "Please give a rating.";
+    if (f.message.trim().length < 10)
+      errs.message = "Message must be at least 10 characters.";
+    return errs;
+  }
 
-    if (!form.emergencyID) {
-      alert("Please select a topic.");
-      return;
-    }
+  const errors = getErrors(form);
 
-    if (form.rating === 0) {
-      alert("Please give a rating from 1 to 5 stars.");
-      return;
-    }
+  /* ── Submit ───────────────────────────────────────────────── */
+  async function handleSubmit(e) {
+    e.preventDefault();
 
-    if (form.message.trim().length < 10) {
-      alert("Please enter at least 10 characters for your feedback.");
+    // Mark all fields touched to show all errors at once
+    setTouched({ emergencyID: true, rating: true, message: true });
+
+    if (Object.keys(errors).length > 0) {
+      addToast("Please fix the highlighted fields before submitting.", "warning");
       return;
     }
 
     try {
       setSubmitting(true);
-      setError("");
 
       const data = await apiRequest("/api/petowner/feedback", {
         method: "POST",
@@ -128,7 +314,7 @@ function PetOwnerFeedback() {
       });
 
       const selectedTopic = guideOptions.find(
-        (topic) => String(topic.emergencyID) === String(form.emergencyID)
+        (t) => String(t.emergencyID) === String(form.emergencyID)
       );
 
       const newFeedback = {
@@ -143,55 +329,69 @@ function PetOwnerFeedback() {
 
       setFeedbackList((prev) => [newFeedback, ...prev]);
 
-      setForm({
-        emergencyID: "",
-        rating: 0,
-        message: "",
+      // Show success modal with snapshot of what was submitted
+      setSuccessSubmission({
+        guideTitle: newFeedback.guideTitle,
+        rating: form.rating,
+        message: form.message.trim(),
       });
 
+      // Reset form
+      setForm(EMPTY_FORM);
+      setTouched({});
       setHoverRating(0);
-
-      alert("Thank you! Your feedback has been submitted.");
-    } catch (error) {
-      console.error("Submit feedback error:", error);
-      alert(error.message || "Failed to submit feedback.");
+    } catch (err) {
+      addToast(err.message || "Failed to submit feedback. Please try again.", "error");
     } finally {
       setSubmitting(false);
     }
   }
 
-  function clearForm() {
+  /* ── Clear ────────────────────────────────────────────────── */
+  function requestClear() {
     if (submitting) return;
-
-    setForm({
-      emergencyID: "",
-      rating: 0,
-      message: "",
-    });
-
-    setHoverRating(0);
+    // Only ask for confirmation if the form has content
+    if (isFormDirty(form)) {
+      setShowClearConfirm(true);
+    } else {
+      addToast("Nothing to clear — form is already empty.", "warning");
+    }
   }
 
+  function confirmClear() {
+    setForm(EMPTY_FORM);
+    setTouched({});
+    setHoverRating(0);
+    setShowClearConfirm(false);
+    addToast("Form cleared.", "success");
+  }
+
+  /* ── Star input ───────────────────────────────────────────── */
   function renderStarInput() {
     return (
-      <div
-        className={`star-rating-input ${hoverRating > 0 ? "hovering" : ""}`}
-      >
+      <div className={`star-rating-input ${hoverRating > 0 ? "hovering" : ""}`}>
         {[1, 2, 3, 4, 5].map((value) => {
-          const shouldFill =
-            hoverRating > 0 ? value <= hoverRating : value <= form.rating;
-
+          const filled = hoverRating > 0 ? value <= hoverRating : value <= form.rating;
           return (
             <span
               key={value}
-              className={shouldFill ? "active" : ""}
-              onClick={() =>
-                !submitting && setForm({ ...form, rating: value })
-              }
+              className={filled ? "active" : ""}
+              onClick={() => {
+                if (submitting) return;
+                setForm((f) => ({ ...f, rating: value }));
+                setTouched((t) => ({ ...t, rating: true }));
+              }}
               onMouseEnter={() => !submitting && setHoverRating(value)}
               onMouseLeave={() => !submitting && setHoverRating(0)}
               role="button"
               aria-label={`${value} star`}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  setForm((f) => ({ ...f, rating: value }));
+                  setTouched((t) => ({ ...t, rating: true }));
+                }
+              }}
             >
               ★
             </span>
@@ -205,6 +405,18 @@ function PetOwnerFeedback() {
     return "★".repeat(Number(rating)) + "☆".repeat(5 - Number(rating));
   }
 
+  /* ── Success modal callbacks ──────────────────────────────── */
+  function handleSuccessClose() {
+    setSuccessSubmission(null);
+  }
+
+  function handleSubmitAnother() {
+    setSuccessSubmission(null);
+    // Scroll form into view smoothly
+    document.getElementById("fb-form-section")?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  /* ── Loading state ────────────────────────────────────────── */
   if (loading) {
     return (
       <div className="admin-page">
@@ -214,171 +426,222 @@ function PetOwnerFeedback() {
             <h1>Feedback</h1>
           </div>
         </div>
-
         <section className="admin-table-card">
           <div className="petowner-empty-state">
             <span className="empty-icon">⏳</span>
-            <p>Loading feedback page...</p>
+            <p>Loading feedback page…</p>
           </div>
         </section>
       </div>
     );
   }
 
-  return (
-    <div className="admin-page">
-      <div className="page-title-row">
-        <div className="page-title-area">
-          <p className="page-subtitle">Share Your Thoughts</p>
-          <h1>Feedback</h1>
-        </div>
-      </div>
+  const charCount = form.message.length;
+  const charOk = charCount >= 10;
 
-      {error && (
-        <section className="admin-table-card" style={{ marginBottom: "20px" }}>
-          <p className="form-note" style={{ color: "#b6533f", margin: 0 }}>
-            {error}
-          </p>
-        </section>
+  /* ── Render ───────────────────────────────────────────────── */
+  return (
+    <>
+      {/* Toast layer */}
+      <ToastPortal toasts={toasts} />
+
+      {/* Success modal */}
+      {successSubmission && (
+        <SuccessModal
+          submission={successSubmission}
+          onClose={handleSuccessClose}
+          onSubmitAnother={handleSubmitAnother}
+        />
       )}
 
-      <div className="dashboard-grid">
-        <section className="admin-form-card">
-          <h2>Submit Feedback</h2>
+      {/* Clear confirm modal */}
+      {showClearConfirm && (
+        <ClearConfirmModal
+          onCancel={() => setShowClearConfirm(false)}
+          onConfirm={confirmClear}
+        />
+      )}
 
-          <p className="form-note">
-            Tell us what worked, what didn't, or what you'd like to see added.
-            Your feedback helps improve the guides for every pet owner.
-          </p>
-
-          <div
-            className="form-note"
-            style={{
-              padding: "12px 14px",
-              border: "1px solid #e5e2dc",
-              borderRadius: "12px",
-              marginBottom: "16px",
-              background: "#faf9f6",
-            }}
-          >
-            <strong>Submitting as:</strong>{" "}
-            {profile.name || "Pet Owner"}{" "}
-            {profile.email ? `(${profile.email})` : ""}
+      <div className="admin-page">
+        <div className="page-title-row">
+          <div className="page-title-area">
+            <p className="page-subtitle">Share Your Thoughts</p>
+            <h1>Feedback</h1>
           </div>
+        </div>
 
-          <form onSubmit={handleSubmit} className="admin-form">
-            <label>
-              Topic / Guide
-              <select
-                value={form.emergencyID}
-                onChange={(event) =>
-                  setForm({ ...form, emergencyID: event.target.value })
-                }
-                disabled={submitting}
-              >
-                <option value="">Select a topic</option>
+        {error && (
+          <section className="admin-table-card" style={{ marginBottom: "20px" }}>
+            <p className="form-note" style={{ color: "#b6533f", margin: 0 }}>
+              {error}
+            </p>
+          </section>
+        )}
 
-                {guideOptions.map((option) => (
-                  <option
-                    key={option.emergencyID}
-                    value={option.emergencyID}
-                  >
-                    {option.icon} {option.title} - {option.petName}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <div className="dashboard-grid">
+          {/* ── Submit form ── */}
+          <section className="admin-form-card" id="fb-form-section">
+            <h2>Submit Feedback</h2>
+            <p className="form-note">
+              Tell us what worked, what didn't, or what you'd like to see
+              added. Your feedback helps improve the guides for every pet owner.
+            </p>
 
-            <label>
-              Rating
-              {renderStarInput()}
-            </label>
-
-            <label>
-              Message
-              <textarea
-                rows="5"
-                placeholder="Share your thoughts about this topic or guide..."
-                value={form.message}
-                onChange={(event) =>
-                  setForm({ ...form, message: event.target.value })
-                }
-                disabled={submitting}
-              />
-            </label>
-
-            <div className="form-actions">
-              <button
-                type="submit"
-                className="primary-btn"
-                disabled={submitting}
-              >
-                {submitting ? "Submitting..." : "Submit Feedback"}
-              </button>
-
-              <button
-                type="button"
-                className="secondary-btn"
-                onClick={clearForm}
-                disabled={submitting}
-              >
-                Clear
-              </button>
+            {/* Submitting-as badge */}
+            <div
+              className="form-note"
+              style={{
+                padding: "12px 14px",
+                border: "1px solid #e5e2dc",
+                borderRadius: "12px",
+                marginBottom: "16px",
+                background: "#faf9f6",
+              }}
+            >
+              <strong>Submitting as:</strong>{" "}
+              {profile.name || "Pet Owner"}{" "}
+              {profile.email ? `(${profile.email})` : ""}
             </div>
-          </form>
-        </section>
 
-        <section className="admin-table-card">
-          <h2>My Feedback History</h2>
-
-          <p className="form-note">
-            A record of feedback you have submitted.
-          </p>
-
-          {feedbackList.length > 0 ? (
-            <div className="feedback-history-list">
-              {feedbackList.map((feedback) => (
-                <article
-                  key={feedback.id}
-                  className="feedback-history-card"
+            <form onSubmit={handleSubmit} className="admin-form" noValidate>
+              {/* Topic */}
+              <label>
+                Topic / Guide
+                <select
+                  value={form.emergencyID}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, emergencyID: e.target.value }));
+                    setTouched((t) => ({ ...t, emergencyID: true }));
+                  }}
+                  disabled={submitting}
+                  style={
+                    touched.emergencyID && errors.emergencyID
+                      ? { borderColor: "#c0583e" }
+                      : {}
+                  }
                 >
-                  <div className="feedback-history-card-header">
-                    <h3>{feedback.guideTitle}</h3>
+                  <option value="">Select a topic</option>
+                  {guideOptions.map((opt) => (
+                    <option key={opt.emergencyID} value={opt.emergencyID}>
+                      {opt.icon} {opt.title} — {opt.petName}
+                    </option>
+                  ))}
+                </select>
+                {touched.emergencyID && errors.emergencyID && (
+                  <span className="fb-field-hint">{errors.emergencyID}</span>
+                )}
+              </label>
 
-                    <span className="feedback-history-stars">
-                      {renderStars(feedback.rating)}
-                    </span>
-                  </div>
+              {/* Rating */}
+              <label>
+                Rating
+                {renderStarInput()}
+                {touched.rating && errors.rating && (
+                  <span className="fb-field-hint">{errors.rating}</span>
+                )}
+              </label>
 
-                  <p className="feedback-history-message">
-                    "{feedback.message}"
-                  </p>
+              {/* Message */}
+              <label>
+                Message
+                <textarea
+                  rows="5"
+                  placeholder="Share your thoughts about this topic or guide…"
+                  value={form.message}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, message: e.target.value }));
+                    setTouched((t) => ({ ...t, message: true }));
+                  }}
+                  disabled={submitting}
+                  style={
+                    touched.message && errors.message
+                      ? { borderColor: "#c0583e" }
+                      : {}
+                  }
+                />
+                {touched.message && errors.message && (
+                  <span className="fb-field-hint">{errors.message}</span>
+                )}
+                <span className={`fb-char-count${charOk ? " fb-char-ok" : ""}`}>
+                  {charCount} / 10 min{charOk ? " ✓" : ""}
+                </span>
+              </label>
 
-                  <div className="feedback-history-meta">
-                    <span>{feedback.submittedAt}</span>
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="primary-btn"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <span className="fb-spinner" aria-hidden="true" />
+                      Submitting…
+                    </>
+                  ) : (
+                    "Submit Feedback"
+                  )}
+                </button>
 
-                    <span
-                      className={
-                        feedback.status === "Reviewed"
-                          ? "status-badge"
-                          : "status-badge draft"
-                      }
-                    >
-                      {feedback.status}
-                    </span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="petowner-empty-state">
-              <span className="empty-icon">💬</span>
-              <p>You have not submitted any feedback yet.</p>
-            </div>
-          )}
-        </section>
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  onClick={requestClear}
+                  disabled={submitting}
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
+          </section>
+
+          {/* ── Feedback history ── */}
+          <section className="admin-table-card">
+            <h2>My Feedback History</h2>
+            <p className="form-note">
+              A record of feedback you have submitted.
+            </p>
+
+            {feedbackList.length > 0 ? (
+              <div className="feedback-history-list">
+                {feedbackList.map((fb) => (
+                  <article key={fb.id} className="feedback-history-card">
+                    <div className="feedback-history-card-header">
+                      <h3>{fb.guideTitle}</h3>
+                      <span className="feedback-history-stars">
+                        {renderStars(fb.rating)}
+                      </span>
+                    </div>
+
+                    <p className="feedback-history-message">
+                      "{fb.message}"
+                    </p>
+
+                    <div className="feedback-history-meta">
+                      <span>{fb.submittedAt}</span>
+                      <span
+                        className={
+                          fb.status === "Reviewed"
+                            ? "status-badge"
+                            : "status-badge draft"
+                        }
+                      >
+                        {fb.status}
+                      </span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="petowner-empty-state">
+                <span className="empty-icon">💬</span>
+                <p>You have not submitted any feedback yet.</p>
+              </div>
+            )}
+          </section>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

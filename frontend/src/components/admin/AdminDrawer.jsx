@@ -94,9 +94,9 @@ function AdminDrawer({ isOpen, onClose }) {
       {isOpen && <div className="drawer-overlay" onClick={onClose}></div>}
 
       {showLogoutModal && (
-        <div className="ad-logout-modal-overlay">
-          <div className="ad-logout-modal">
-            <div className="ad-logout-modal-icon">🚪</div>
+        <div className="po-logout-modal-overlay">
+          <div className="po-logout-modal">
+            <div className="po-logout-modal-icon">🚪</div>
 
             <h2>Log out?</h2>
 
@@ -105,10 +105,10 @@ function AdminDrawer({ isOpen, onClose }) {
               in again anytime using your admin account.
             </p>
 
-            <div className="ad-logout-modal-actions">
+            <div className="po-logout-modal-actions">
               <button
                 type="button"
-                className="ad-logout-cancel-btn"
+                className="po-logout-cancel-btn"
                 onClick={closeLogoutModal}
               >
                 Cancel
@@ -116,7 +116,7 @@ function AdminDrawer({ isOpen, onClose }) {
 
               <button
                 type="button"
-                className="ad-logout-confirm-btn"
+                className="po-logout-confirm-btn"
                 onClick={handleLogoutConfirm}
               >
                 Yes, log out
@@ -127,8 +127,8 @@ function AdminDrawer({ isOpen, onClose }) {
       )}
 
       {showLogoutSuccess && (
-        <div className="ad-logout-success">
-          <div className="ad-logout-success-icon">✓</div>
+        <div className="po-logout-success">
+          <div className="po-logout-success-icon">✓</div>
 
           <div>
             <strong>Logged out successfully</strong>
