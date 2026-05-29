@@ -507,7 +507,7 @@ router.delete("/quizzes/:id", async (req, res) => {
 });
 
 // FEEDBACK REVIEW
-// GET /api/admin/feedback  — newest first. Optional filter: ?status=new
+// GET /api/admin/feedback — newest first. Optional filter: ?status=new
 router.get("/feedback", async (req, res) => {
   try {
     const { status } = req.query;
@@ -515,19 +515,34 @@ router.get("/feedback", async (req, res) => {
     const params = status ? [status] : [];
 
     const [feedback] = await pool.query(
-      `SELECT f.feedbackID, f.userID, u.name AS userName, u.email AS userEmail,
-              f.emergencyID, ec.topicTitle, f.rating, f.message, f.status, f.submitted_at
-       FROM feedback f
-       JOIN users u ON f.userID = u.userID
-       JOIN emergency_cases ec ON f.emergencyID = ec.emergencyID
-       ${where}
-       ORDER BY f.submitted_at DESC`,
+      `
+      SELECT 
+        f.feedbackID,
+        f.userID,
+        COALESCE(u.name, f.name, 'Public User') AS userName,
+        COALESCE(u.email, f.email, 'No email') AS userEmail,
+        f.emergencyID,
+        ec.topicTitle,
+        f.rating,
+        f.message,
+        f.status,
+        f.submitted_at
+      FROM feedback f
+      LEFT JOIN users u ON f.userID = u.userID
+      JOIN emergency_cases ec ON f.emergencyID = ec.emergencyID
+      ${where}
+      ORDER BY f.submitted_at DESC
+      `,
       params
     );
+
     res.json({ message: "Feedback loaded.", feedback });
   } catch (error) {
     console.error("Admin get feedback error:", error);
-    res.status(500).json({ message: "Server error loading feedback.", error: error.message });
+    res.status(500).json({
+      message: "Server error loading feedback.",
+      error: error.message,
+    });
   }
 });
 
